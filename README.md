@@ -1,14 +1,14 @@
 # Computer Graphics 203.3710
 ## Students Team data
 
-Name: 
+Name: Abed Alftah Abed Alftah
 
-Student Number: 
+Student Number: 206529836
 
 
-Name: 
+Name: Roge Azzam
 
-Student Number: 
+Student Number: 207177098
 
 ### Lecturer
 *Roi Poranne*
