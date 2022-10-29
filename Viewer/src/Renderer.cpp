@@ -59,14 +59,14 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 		
 		if (e < 0) {
 			PutPixel(x1, y1, color);
-			e = e + 2 * dy;
+			e += 2 * dy;
 		}
 		else {
 			if (y1 < y2) y1++; else y1--;
 
 			PutPixel(x1, y1, color);
 
-			e = e + 2 * dy - 2 * dx;
+			e += 2 * dy - 2 * dx;
 		}
 	}
 	for (int i = 0; i <= dy && !trueFalse; i++) {	
@@ -74,14 +74,14 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 
 		if (e < 0) {
 			PutPixel(x1, y1, color);
-			e = e + 2 * dx;
+			e += 2 * dx;
 		}
 		else {
 			if (x1 < x2) x1++; else x1--;
 
 			PutPixel(x1, y1, color);
 
-			e = e + 2 * dx - 2 * dy;
+			e += 2 * dx - 2 * dy;
 		}
 	}
 }
