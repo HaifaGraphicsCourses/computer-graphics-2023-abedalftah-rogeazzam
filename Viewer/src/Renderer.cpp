@@ -1,7 +1,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
-
+#include <iostream>
 #include "Renderer.h"
 #include "InitShader.h"
 
@@ -35,6 +35,55 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 {
 	// TODO: Implement bresenham algorithm
 	// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+
+	int dx = abs(p2[0] - p1[0]);
+	int dy = abs(p2[1] - p1[1]);
+
+	int e = 2 * dy - dx;
+
+	int x1 = p1[0];
+	int y1 = p1[1];
+
+	int x2 = p2[0];
+	int y2 = p2[1];
+
+	bool trueFalse = true;
+
+	if (dx < dy) {
+		e = 2 * dx - dy;
+		trueFalse = false;
+	}
+
+	for (int i = 0; i <= dx && trueFalse; i++) {
+		if (x1 < x2) x1++; else x1--;
+		
+		if (e < 0) {
+			PutPixel(x1, y1, color);
+			e += 2 * dy;
+		}
+		else {
+			if (y1 < y2) y1++; else y1--;
+
+			PutPixel(x1, y1, color);
+
+			e += 2 * dy - 2 * dx;
+		}
+	}
+	for (int i = 0; i <= dy && !trueFalse; i++) {	
+		if (y1 < y2) y1++; else y1--;
+
+		if (e < 0) {
+			PutPixel(x1, y1, color);
+			e += 2 * dx;
+		}
+		else {
+			if (x1 < x2) x1++; else x1--;
+
+			PutPixel(x1, y1, color);
+
+			e += 2 * dx - 2 * dy;
+		}
+	}
 }
 
 void Renderer::CreateBuffers(int w, int h)
@@ -138,6 +187,7 @@ void Renderer::CreateOpenglBuffer()
 
 void Renderer::SwapBuffers()
 {
+
 	// Makes GL_TEXTURE0 the current active texture unit
 	glActiveTexture(GL_TEXTURE0);
 
@@ -159,6 +209,7 @@ void Renderer::SwapBuffers()
 
 void Renderer::ClearColorBuffer(const glm::vec3& color)
 {
+
 	for (int i = 0; i < viewport_width; i++)
 	{
 		for (int j = 0; j < viewport_height; j++)
@@ -170,10 +221,24 @@ void Renderer::ClearColorBuffer(const glm::vec3& color)
 
 void Renderer::Render(const Scene& scene)
 {
+	glm::vec4 color = glm::vec4(0.2f, 0.13f, 0.5f, 1.00f);
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
 	int half_height = viewport_height / 2;
-	// draw circle
+
+	glm::vec2 p1 = glm::ivec2(0, viewport_height);
+	glm::vec2 p2 = glm::ivec2(viewport_width / 2, viewport_height / 2);
+
+	glm::vec2 q2 = glm::ivec2(viewport_width, viewport_height);
+	glm::vec2 q1 = glm::ivec2(viewport_width / 2, viewport_height / 2);
+	double pi = 2 * acos(0.0);
+
+		for (int i = 0; i < 50; i++) {
+			DrawLine(glm::ivec2(half_width, half_height), glm::ivec2(half_width + (200*sin((2 * pi * i) / 50)), half_height + (200*cos((2 * pi * i) /50))), color);
+		}
+
+	//DrawLine(p1, p2, color);
+	//DrawLine(q1, q2, color);
 
 }
 
