@@ -225,13 +225,8 @@ void Renderer::ClearColorBuffer(const glm::vec3& color)
 	}
 }
 
-void Renderer::Render(const Scene& scene)
+void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const glm::vec3& color)
 {
-	glm::vec4 color = glm::vec4(0.2f, 0.13f, 0.5f, 1.00f);
-	// TODO: Replace this code with real scene rendering code
-	int half_width = viewport_width / 2;
-	int half_height = viewport_height / 2;
-
 	glm::vec2 p1 = glm::ivec2(0, viewport_height);
 	glm::vec2 p2 = glm::ivec2(viewport_width / 2, viewport_height / 2);
 
@@ -239,13 +234,44 @@ void Renderer::Render(const Scene& scene)
 	glm::vec2 q1 = glm::ivec2(viewport_width / 2, viewport_height / 2);
 	double pi = 2 * acos(0.0);
 
-		for (int i = 0; i < 500; i++) {
-			DrawLine(glm::ivec2(half_width, half_height), glm::ivec2(half_width + (200*sin((2 * pi * i) / 500)), half_height + (200*cos((2 * pi * i) /500))), color);
-		}
+	for (int i = 0; i < a; i++) {
+		DrawLine(glm::ivec2(half_width, half_height),glm::ivec2(half_width + (r * sin((2 * pi * i) / a)),
+			half_height + (r * cos((2 * pi * i) / a))), color);
+	}
+}
 
-	//DrawLine(p1, p2, color);
-	//DrawLine(q1, q2, color);
 
+void Renderer::DrawFlower()
+{
+	int half_width = viewport_width / 2;
+	int half_height = viewport_height / 2;
+	int frac1 = viewport_width * 7 / 8, frac2 = viewport_width * 6.5 / 8;
+
+	for (int i = 0; i < 50; i++) {
+		DrawLine(glm::ivec2(frac1 + i, 0), glm::ivec2(frac2 + i, half_height - 180),
+			glm::vec3(1.0f, 0.5f, 0.31f));
+
+		DrawLine(glm::ivec2(frac2 + i, half_height - 180), glm::ivec2(half_width, half_height),
+			glm::vec3(1.0f, 0.5f, 0.31f));
+	}
+
+	DrawCircle(21600, 70, half_width - 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width - 200, half_height, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width - 150, half_height + 150, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width, half_height - 200, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width, half_height + 200, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width + 150, half_height + 150, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width + 200, half_height, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 70, half_width + 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
+	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
+}
+
+void Renderer::Render(const Scene& scene)
+{
+	// TODO: Replace this code with real scene rendering code
+	int half_width = viewport_width / 2;
+	int half_height = viewport_height / 2;
+	DrawFlower();
 }
 
 int Renderer::GetViewportWidth() const
