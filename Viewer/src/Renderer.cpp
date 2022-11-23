@@ -255,6 +255,8 @@ void Renderer::DrawFlower()
 			glm::vec3(1.0f, 0.5f, 0.31f));
 	}
 
+	DrawCircle(21600, 200, half_width - 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
+
 	DrawCircle(21600, 70, half_width - 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
 	DrawCircle(21600, 70, half_width - 200, half_height, glm::vec3(1.0f, 0.5f, 0.31f));
 	DrawCircle(21600, 70, half_width - 150, half_height + 150, glm::vec3(1.0f, 0.5f, 0.31f));
@@ -266,12 +268,74 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
+
 void Renderer::Render(const Scene& scene)
 {
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
 	int half_height = viewport_height / 2;
-	DrawFlower();
+	//DrawFlower();
+	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
+
+	for (int i = 0; i < meshModel.size(); i++) {
+		std::vector<Face> faces = meshModel[i].getFaces();
+		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
+		glm::mat4 mat = meshModel[i].transformationMat();
+
+		for (int j = 0; j < faces.size(); j++) {
+			int v1 = faces[j].GetVertexIndex(0) - 1;
+			int v2 = faces[j].GetVertexIndex(1) - 1;
+			int v3 = faces[j].GetVertexIndex(2) - 1;
+
+			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
+
+			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+			cords[0].x = transformP1.x / transformP1.w;
+			cords[0].y = transformP1.y / transformP1.w;
+			cords[0].z = transformP1.z;
+			if (!meshModel[i].localTrans)
+				cords[0].z /= transformP1.w;
+
+			glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
+			cords[1].x = transformP2.x / transformP2.w;
+			cords[1].y = transformP2.y / transformP2.w;
+			cords[1].z = transformP2.z;
+			if (!meshModel[i].localTrans)
+				cords[1].z /= transformP2.w;
+
+			glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
+			cords[2].x = transformP3.x / transformP3.w;
+			cords[2].y = transformP3.y / transformP3.w;
+			cords[2].z = transformP3.z;
+			if (!meshModel[i].localTrans)
+				cords[2].z /= transformP3.w;
+
+			cords[0].x += half_width;
+			cords[1].x += half_width;
+			cords[2].x += half_width;
+
+			cords[0].y += half_height;
+			cords[1].y += half_height;
+			cords[2].y += half_height;
+
+			if (cords[0].x > cords[1].x)
+				DrawTriangle(cords[2], cords[1], cords[0], meshModel[i].getColor());
+			else if (cords[2].x > cords[0].x)
+				DrawTriangle(cords[1], cords[0], cords[2], meshModel[i].getColor());
+			else
+				DrawTriangle(cords[0], cords[2], cords[1], meshModel[i].getColor());
+
+		}
+		
+	}
+
+}
+
+void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color)
+{
+	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
+	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
+	DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
 }
 
 int Renderer::GetViewportWidth() const

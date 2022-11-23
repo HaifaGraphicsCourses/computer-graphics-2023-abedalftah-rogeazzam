@@ -1,6 +1,7 @@
 #include "Scene.h"
 #include "MeshModel.h"
 #include <string>
+#include <iostream>
 
 Scene::Scene() :
 	active_camera_index(0),
@@ -19,14 +20,19 @@ int Scene::GetModelCount() const
 	return mesh_models.size();
 }
 
-MeshModel& Scene::GetModel(int index) const
+MeshModel& Scene::GetModel(int index)
 {
 	return *mesh_models[index];
 }
 
-MeshModel& Scene::GetActiveModel() const
+vector<MeshModel> Scene::GetActiveModels(vector<int> index) const
 {
-	return *mesh_models[active_model_index];
+	vector<MeshModel> mesh;
+
+	for(int i = 0; i < index.size(); i++)
+		mesh.push_back(*mesh_models[index[i]]);
+
+	return mesh;
 }
 
 void Scene::AddCamera(const std::shared_ptr<Camera>& camera)
@@ -61,10 +67,37 @@ int Scene::GetActiveCameraIndex() const
 
 void Scene::SetActiveModelIndex(int index)
 {
-	active_model_index = index;
+	bool itsIn = false;
+
+	for (int i = 0; i < active_model_index.size(); i++)
+		if (active_model_index[i] == index)
+			itsIn = true;
+
+	if(!itsIn)
+		active_model_index.push_back(index);
 }
 
-int Scene::GetActiveModelIndex() const
+void Scene::TurnOffActiveModel(int index)
+{
+	
+	int i = 0;
+	for (; i < active_model_index.size(); i++)
+		if (active_model_index[i] == index)
+			break;
+
+
+	if(!active_model_index.empty() && i < active_model_index.size())
+		active_model_index.erase(active_model_index.begin() + i);
+
+
+}
+
+vector<int> Scene::GetActiveModelsIndexes() const
 {
 	return active_model_index;
+}
+
+MeshModel& Scene::GetActiveModel(int index) 
+{
+	return *mesh_models[index];
 }
