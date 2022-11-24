@@ -69,7 +69,8 @@ std::shared_ptr<MeshModel> Utils::LoadMeshModel(const std::string& filePath)
 		}
 	}
 
-	return std::make_shared<MeshModel>(faces, vertices, normals, texture, Utils::GetFileName(filePath));
+	std::string s = Utils::GetFileName(filePath);
+	return std::make_shared<MeshModel>(faces, vertices, normals, texture, s.substr(0, s.length() - 4));
 }
 
 std::string Utils::GetFileName(const std::string& filePath)
