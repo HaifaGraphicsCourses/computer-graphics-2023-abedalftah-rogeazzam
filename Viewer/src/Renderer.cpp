@@ -25,7 +25,7 @@ void Renderer::PutPixel(int i, int j, const glm::vec3& color)
 {
 	if (i < 0) return; if (i >= viewport_width) return;
 	if (j < 0) return; if (j >= viewport_height) return;
-	
+
 	color_buffer[INDEX(viewport_width, i, j, 0)] = color.x;
 	color_buffer[INDEX(viewport_width, i, j, 1)] = color.y;
 	color_buffer[INDEX(viewport_width, i, j, 2)] = color.z;
@@ -52,7 +52,7 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 	if (dx < dy) { //If the slope(m) > 1 then we need to just modify the points (to swap each x with y) and change the error  
 		e = 2 * dx - dy;
 
-		int temp = dx; 
+		int temp = dx;
 		dx = dy;
 		dy = temp;
 
@@ -69,9 +69,9 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 		trueFalse = false;
 	}
 
-	for (int i = 0; i <= dx ; i++) {
+	for (int i = 0; i <= dx; i++) {
 		if (x1 < x2) x1++; else x1--;
-		
+
 		if (e < 0) {
 			if (trueFalse) //tells us if we're in the second situation
 				PutPixel(x1, y1, color);
@@ -127,7 +127,7 @@ void Renderer::InitOpenglRendering()
 	//	     | \ | <--- The exture is drawn over two triangles that stretch over the screen.
 	//	     |__\|
 	// (-1,-1)    (1,-1)
-	const GLfloat vtc[]={
+	const GLfloat vtc[] = {
 		-1, -1,
 		 1, -1,
 		-1,  1,
@@ -136,19 +136,19 @@ void Renderer::InitOpenglRendering()
 		 1,  1
 	};
 
-	const GLfloat tex[]={
+	const GLfloat tex[] = {
 		0,0,
 		1,0,
 		0,1,
 		0,1,
 		1,0,
-		1,1};
+		1,1 };
 
 	// Makes this buffer the current one.
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
 	// This is the opengl way for doing malloc on the gpu. 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vtc)+sizeof(tex), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vtc) + sizeof(tex), NULL, GL_STATIC_DRAW);
 
 	// memcopy vtc to buffer[0,sizeof(vtc)-1]
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vtc), vtc);
@@ -157,25 +157,25 @@ void Renderer::InitOpenglRendering()
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vtc), sizeof(tex), tex);
 
 	// Loads and compiles a sheder.
-	GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
+	GLuint program = InitShader("vshader.glsl", "fshader.glsl");
 
 	// Make this program the current one.
 	glUseProgram(program);
 
 	// Tells the shader where to look for the vertex position data, and the data dimensions.
-	GLint  vPosition = glGetAttribLocation( program, "vPosition" );
-	glEnableVertexAttribArray( vPosition );
-	glVertexAttribPointer( vPosition,2,GL_FLOAT,GL_FALSE,0,0 );
+	GLint  vPosition = glGetAttribLocation(program, "vPosition");
+	glEnableVertexAttribArray(vPosition);
+	glVertexAttribPointer(vPosition, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Same for texture coordinates data.
-	GLint  vTexCoord = glGetAttribLocation( program, "vTexCoord" );
-	glEnableVertexAttribArray( vTexCoord );
-	glVertexAttribPointer( vTexCoord,2,GL_FLOAT,GL_FALSE,0,(GLvoid *)sizeof(vtc) );
+	GLint  vTexCoord = glGetAttribLocation(program, "vTexCoord");
+	glEnableVertexAttribArray(vTexCoord);
+	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)sizeof(vtc));
 
 	//glProgramUniform1i( program, glGetUniformLocation(program, "texture"), 0 );
 
 	// Tells the shader to use GL_TEXTURE0 as the texture id.
-	glUniform1i(glGetUniformLocation(program, "texture"),0);
+	glUniform1i(glGetUniformLocation(program, "texture"), 0);
 }
 
 void Renderer::CreateOpenglBuffer()
@@ -235,7 +235,7 @@ void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const g
 	double pi = 2 * acos(0.0);
 
 	for (int i = 0; i < a; i++) {
-		DrawLine(glm::ivec2(half_width, half_height),glm::ivec2(half_width + (r * sin((2 * pi * i) / a)),
+		DrawLine(glm::ivec2(half_width, half_height), glm::ivec2(half_width + (r * sin((2 * pi * i) / a)),
 			half_height + (r * cos((2 * pi * i) / a))), color);
 	}
 }
@@ -255,6 +255,8 @@ void Renderer::DrawFlower()
 			glm::vec3(1.0f, 0.5f, 0.31f));
 	}
 
+	DrawCircle(21600, 200, half_width - 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
+
 	DrawCircle(21600, 70, half_width - 150, half_height - 150, glm::vec3(1.0f, 0.5f, 0.31f));
 	DrawCircle(21600, 70, half_width - 200, half_height, glm::vec3(1.0f, 0.5f, 0.31f));
 	DrawCircle(21600, 70, half_width - 150, half_height + 150, glm::vec3(1.0f, 0.5f, 0.31f));
@@ -266,12 +268,74 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
+
 void Renderer::Render(const Scene& scene)
 {
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
 	int half_height = viewport_height / 2;
-	DrawFlower();
+	//DrawFlower();
+	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
+
+	for (int i = 0; i < meshModel.size(); i++) {
+		std::vector<Face> faces = meshModel[i].getFaces();
+		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
+		glm::mat4 mat = meshModel[i].transformationMat();
+
+		for (int j = 0; j < faces.size(); j++) {
+			int v1 = faces[j].GetVertexIndex(0) - 1;
+			int v2 = faces[j].GetVertexIndex(1) - 1;
+			int v3 = faces[j].GetVertexIndex(2) - 1;
+
+			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
+
+			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+			cords[0].x = transformP1.x / transformP1.w;
+			cords[0].y = transformP1.y / transformP1.w;
+			cords[0].z = transformP1.z;
+			if (!meshModel[i].localTrans)
+				cords[0].z /= transformP1.w;
+
+			glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
+			cords[1].x = transformP2.x / transformP2.w;
+			cords[1].y = transformP2.y / transformP2.w;
+			cords[1].z = transformP2.z;
+			if (!meshModel[i].localTrans)
+				cords[1].z /= transformP2.w;
+
+			glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
+			cords[2].x = transformP3.x / transformP3.w;
+			cords[2].y = transformP3.y / transformP3.w;
+			cords[2].z = transformP3.z;
+			if (!meshModel[i].localTrans)
+				cords[2].z /= transformP3.w;
+
+			cords[0].x += half_width;
+			cords[1].x += half_width;
+			cords[2].x += half_width;
+
+			cords[0].y += half_height;
+			cords[1].y += half_height;
+			cords[2].y += half_height;
+
+			if (cords[0].x > cords[1].x)
+				DrawTriangle(cords[2], cords[1], cords[0], meshModel[i].getColor());
+			else if (cords[2].x > cords[0].x)
+				DrawTriangle(cords[1], cords[0], cords[2], meshModel[i].getColor());
+			else
+				DrawTriangle(cords[0], cords[2], cords[1], meshModel[i].getColor());
+
+		}
+
+	}
+
+}
+
+void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color)
+{
+	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
+	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
+	DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
 }
 
 int Renderer::GetViewportWidth() const
