@@ -9,6 +9,18 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 	texture(texture),
 	model_name(model_name)
 {
+
+	for (int i = 0; i < this->vertices.size(); i++)
+		std::cout << "v " << this->vertices[i].x <<
+		" " << this->vertices[i].y << " "
+		<< this->vertices[i].z << std::endl;
+
+	for (int i = 0; i < faces.size(); i++) {
+		std::cout << "f " << faces[i].GetVertexIndex(0) << "/" << "/" << faces[i].GetNormalIndex(0) << " ";
+		std::cout << faces[i].GetVertexIndex(1) << "/" << "/" << faces[i].GetNormalIndex(1) << " ";
+		std::cout << faces[i].GetVertexIndex(2) << "/" << "/" << faces[i].GetNormalIndex(2) << std::endl;
+	}
+
 	glm::mat3 s(1);
 	s[2][2] = 1;
 	float max_x = 0, max_y = 0;
@@ -21,17 +33,11 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 
 	s[0][0] = s[1][1] = (320 / max_x > 180 / max_y ? 180 / max_y : 320 / max_x);
 
-	for (int i = 0; i < vertices.size(); i++) {
+	for (int i = 0; i < vertices.size(); i++) 
 		this->vertices[i] = s * this->vertices[i];
-	}
 
 	double maxX = 0, maxY = 0, minX = 0, minY = 0, midX, midY;
 	for (int i = 0; i < this->vertices.size(); i++) {
-
-		std::cout << "v " << this->vertices[i].x <<
-			" " << this->vertices[i].y << " "
-			<< this->vertices[i].z << std::endl;
-
 		if (i == 0) {
 			minX = this->vertices[i].x;
 			minY = this->vertices[i].y;
@@ -56,12 +62,6 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 	for (int i = 0; i < this->vertices.size(); i++) {
 		this->vertices[i].x -= midX;
 		this->vertices[i].y -= midY;
-	}
-
-	for (int i = 0; i < faces.size(); i++) {
-		std::cout << "f " << faces[i].GetVertexIndex(0) << "/" << "/" << faces[i].GetNormalIndex(0) << " ";
-		std::cout << faces[i].GetVertexIndex(1) << "/" << "/" << faces[i].GetNormalIndex(1) << " ";
-		std::cout << faces[i].GetVertexIndex(2) << "/" << "/" << faces[i].GetNormalIndex(2) << std::endl;
 	}
 
 }
