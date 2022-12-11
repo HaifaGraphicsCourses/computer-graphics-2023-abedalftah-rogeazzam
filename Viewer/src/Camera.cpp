@@ -167,3 +167,11 @@ glm::mat4x4& Camera::GetWorldTransformations()
 	return worldMatrixT * worldMatrixRX * worldMatrixRY * worldMatrixRZ *
 		localMatrixT * localMatrixRX * localMatrixRY * localMatrixRZ;
 }
+
+void Camera::updateDolly()
+{
+	this->fovy = glm::pi<float>() / 4;
+	if (worldTransVec[2] + 1 != 0) {
+		fovy /= worldTransVec[2] + 1;
+	}
+}

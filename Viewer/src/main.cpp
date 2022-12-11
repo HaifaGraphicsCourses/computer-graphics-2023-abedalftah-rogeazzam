@@ -32,6 +32,7 @@ static float fov = 45;
 glm::vec4 clear_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
 glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
 static int num = 0, number = 0, number1 = 0;
+static float dollyTrans = 0;
 
 /**
  * Function declarations
@@ -145,9 +146,11 @@ void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& 
 	if (frameBufferWidth != renderer.GetViewportWidth() || frameBufferHeight != renderer.GetViewportHeight())
 	{
 		Renderer renderer = Renderer(frameBufferWidth, frameBufferHeight);
-		glfwSetWindowAspectRatio(window, renderer.GetViewportWidth(), renderer.GetViewportHeight());
+		if (renderer.GetViewportWidth() && renderer.GetViewportHeight())
+			glfwSetWindowAspectRatio(window, renderer.GetViewportWidth(), renderer.GetViewportHeight());
 		mouseX = frameBufferWidth / 2;
 		mouseY = frameBufferHeight / 2;
+
 	}
 
 	if (!io.WantCaptureKeyboard && useKeyboard)
@@ -529,6 +532,7 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::Checkbox("Orthographic", &ortho);
 			ImGui::Checkbox("Perspective", &persp);
 			ImGui::Checkbox("Incremental Changes", &cameraWorldTrans);
+
 			if (ImGui::Button("Add Camera")) {
 				scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
 			}
@@ -554,6 +558,7 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			}
 			else if (persp && scene.GetActiveCameraIndex() != -1) {
 				fov = glm::degrees(scene.GetActiveCamera().fovy);
+				dollyTrans = scene.GetActiveCamera().worldTransVec[2];
 				scene.GetActiveCamera().isItPers = true;
 				ImGui::Begin("Perspective buttons");
 				ImGui::SliderFloat("Fovy", &fov, -180, 180);
@@ -562,6 +567,11 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				ImGui::SliderFloat("far", &scene.GetActiveCamera().perfar, -10, 10);
 				scene.GetActiveCamera().fovy = glm::radians(fov);
 				scene.GetActiveCamera().updatePers();
+				if (ImGui::SliderFloat("Dolly Zoom", &dollyTrans, 0, 20)) {
+					scene.GetActiveCamera().worldTransVec[2] = dollyTrans;
+					scene.GetActiveCamera().updateDolly();
+					scene.GetActiveCamera().updateWorldTransformation();
+				}
 
 				ImGui::End();
 			}
