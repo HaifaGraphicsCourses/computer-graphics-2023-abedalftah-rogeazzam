@@ -92,18 +92,15 @@ Making approximatly same transformations in the world frame then in the local fr
 
 Requirement 6:
 
-Initially, loading "bunny.obj" and showing the bounding box by pressing "Advanced features" checkbox, then pressing "bound box" checkbox:
-
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq1.png)
-
+Loading "bishop.obj" and showing the bounding box by pressing "Advanced features" checkbox, then pressing "bound box" checkbox:
 
 Transforming (translating then rotating) the mesh in the local frame: (The bounding box appears in white)
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq2.png)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq1.png)
 
 Transforming (translating then rotating) the mesh in the world frame:
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq3.png)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq2.png)
 
 
 Requirement 7:
