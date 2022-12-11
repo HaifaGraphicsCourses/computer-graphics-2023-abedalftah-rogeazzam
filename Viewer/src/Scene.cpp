@@ -4,7 +4,7 @@
 #include <iostream>
 
 Scene::Scene() :
-	active_camera_index(0),
+	active_camera_index(-1),
 	active_model_index(0)
 {
 
@@ -77,6 +77,7 @@ void Scene::SetActiveModelIndex(int index)
 		active_model_index.push_back(index);
 }
 
+
 void Scene::TurnOffActiveModel(int index)
 {
 
@@ -91,6 +92,7 @@ void Scene::TurnOffActiveModel(int index)
 
 
 }
+
 
 vector<int> Scene::GetActiveModelsIndexes() const
 {

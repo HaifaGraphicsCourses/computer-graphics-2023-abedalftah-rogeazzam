@@ -90,11 +90,40 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 			e += 2 * dy - 2 * dx;
 		}
 	}
+
+}
+
+void Renderer::drawWorldAxies(Camera camera)
+{
+	//we're not sure that we need to translate the world axies
+	glm::mat4x4 mat = camera.GetViewTransformation();
+	glm::fvec4 worldAxies = mat * glm::fvec4(0, 0, 0, 1);
+	glm::fvec4 worldX = mat * glm::fvec4(viewport_width + worldAxies[0], 0, 0, 1);
+	glm::fvec4 worldY = mat * glm::fvec4(0, viewport_height + worldAxies[1], 0, 1);
+	glm::fvec4 worldZ = mat * glm::fvec4(0, 0, viewport_width + worldAxies[0], 1);
+
+	worldAxies.x /= worldAxies.w;
+	worldAxies.y /= worldAxies.w;
+	worldAxies.z /= worldAxies.w;
+
+	worldX.x /= worldX.w;
+	worldX.y /= worldX.w;
+	worldX.z /= worldX.w;
+
+	worldY.x /= worldY.w;
+	worldY.y /= worldY.w;
+	worldY.z /= worldY.w;
+
+	DrawLine(worldAxies, worldX, glm::fvec3(0.3, 0.3, 1));
+	DrawLine(worldAxies, worldY, glm::fvec3(0.8, 0, 0.8));
+	DrawLine(worldAxies, worldZ, glm::fvec3(0.1, 0.9, 0.5));
 }
 
 void Renderer::CreateBuffers(int w, int h)
 {
 	CreateOpenglBuffer(); //Do not remove this line.
+	if (color_buffer)
+		delete[] color_buffer;
 	color_buffer = new float[3 * w * h];
 	ClearColorBuffer(glm::vec3(0.0f, 0.0f, 0.0f));
 }
@@ -240,6 +269,27 @@ void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const g
 	}
 }
 
+void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
+{
+	//A function to draw the model axies
+	//here we only move the bouding box by world transformations or camera transformations
+	glm::mat4x4 mat = meshModel.worldTransMat();
+	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
+
+	if (scene.GetActiveCameraIndex() != -1)
+		mat1 = scene.GetActiveCamera().GetViewTransformation();
+
+	mat = mat1 * mat;
+
+	glm::fvec4 modelAxies = mat * glm::fvec4(0, 0, 0, 1);
+	glm::fvec4 localX = mat * glm::fvec4(80, 0, 0, 1);
+	glm::fvec4 localY = mat * glm::fvec4(0, 80, 0, 1);
+	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 80, 1);
+
+	DrawLine(modelAxies, localX, glm::fvec3(0, 0, 0));
+	DrawLine(modelAxies, localY, glm::fvec3(0, 1, 1));
+	DrawLine(modelAxies, localZ, glm::fvec3(1, 0, 1));
+}
 
 void Renderer::DrawFlower()
 {
@@ -269,19 +319,125 @@ void Renderer::DrawFlower()
 }
 
 
+void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
+{
+	//A function to draw the bouding box
+	//here we only move the bouding box by world transformations or camera transformations
+	glm::mat4x4 mat = meshModel.worldTransMat();
+	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
+
+	if (scene.GetActiveCameraIndex() != -1)
+		mat1 = scene.GetActiveCamera().GetViewTransformation();
+
+	mat = mat1 * mat;
+	glm::fvec4 f0 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.max_z, 1);
+
+	glm::fvec4 f1 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.min_z, 1);
+
+	glm::fvec4 f4 = mat * glm::fvec4(meshModel.min_x, meshModel.max_y, meshModel.max_z, 1);
+
+	glm::fvec4 f7 = mat * glm::fvec4(meshModel.min_x, meshModel.max_y, meshModel.min_z, 1);
+
+
+	glm::fvec4 f6 = mat * glm::fvec4(meshModel.min_x, meshModel.min_y, meshModel.min_z, 1);
+
+	glm::fvec4 f8 = mat * glm::fvec4(meshModel.min_x, meshModel.min_y, meshModel.max_z, 1);
+
+	glm::fvec4 f2 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.min_z, 1);
+
+	glm::fvec4 f3 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.max_z, 1);
+
+	//we connect every coordinate with the neighbors
+	DrawLine(f0, f1, glm::vec3(1, 1, 1));
+	DrawLine(f0, f4, glm::vec3(1, 1, 1));
+	DrawLine(f0, f3, glm::vec3(1, 1, 1));
+
+	DrawLine(f7, f1, glm::vec3(1, 1, 1));
+	DrawLine(f7, f4, glm::vec3(1, 1, 1));
+	DrawLine(f7, f6, glm::vec3(1, 1, 1));
+
+	DrawLine(f2, f3, glm::vec3(1, 1, 1));
+	DrawLine(f2, f1, glm::vec3(1, 1, 1));
+	DrawLine(f6, f2, glm::vec3(1, 1, 1));
+
+	DrawLine(f8, f4, glm::vec3(1, 1, 1));
+	DrawLine(f8, f3, glm::vec3(1, 1, 1));
+	DrawLine(f8, f6, glm::vec3(1, 1, 1));
+}
+
+void Renderer::drawCameras(Scene& scene)
+{
+	//A function to draw the active cameras
+	std::vector<Face> faces = scene.GetActiveCamera().getFaces();
+	std::vector<glm::fvec3> vertices = scene.GetActiveCamera().getVertices();
+	glm::mat4x4 mat = scene.GetActiveCamera().GetWorldTransformations();
+	for (int j = 0; j < faces.size(); j++) {
+		int v1 = faces[j].GetVertexIndex(0) - 1;
+		int v2 = faces[j].GetVertexIndex(1) - 1;
+		int v3 = faces[j].GetVertexIndex(2) - 1;
+
+		glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
+
+		glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+		cords[0].x = transformP1.x;
+		cords[0].y = transformP1.y;
+		cords[0].z = transformP1.z;
+
+		cords[0].z = transformP1.w;
+
+		glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
+		cords[1].x = transformP2.x;
+		cords[1].y = transformP2.y;
+		cords[1].z = transformP2.z;
+		cords[1].z = transformP2.w;
+
+
+		glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
+		cords[2].x = transformP3.x;
+		cords[2].y = transformP3.y;
+		cords[2].z = transformP3.z;
+
+		cords[2].z = transformP3.w;
+
+		if (cords[0].x > cords[1].x)
+			DrawTriangle(cords[2], cords[1], cords[0], glm::fvec3(0));
+		else if (cords[2].x > cords[0].x)
+			DrawTriangle(cords[1], cords[0], cords[2], glm::fvec3(0));
+		else
+			DrawTriangle(cords[0], cords[2], cords[1], glm::fvec3(0));
+	}
+}
+
+
 void Renderer::Render(const Scene& scene)
+
 {
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
 	int half_height = viewport_height / 2;
 	//DrawFlower();
+
+	if (scene.GetActiveCameraIndex() != -1 && scene.GetActiveCamera().drawWorldAxisFlag)
+		drawWorldAxies(scene.GetActiveCamera());
+	if (scene.drawCameras) {
+		drawCameras(scene);
+	}
+
 	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
 
 	for (int i = 0; i < meshModel.size(); i++) {
 		std::vector<Face> faces = meshModel[i].getFaces();
 		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
-		glm::mat4 mat = meshModel[i].transformationMat();
 
+		//we need to multiply by camera transformation
+		glm::mat4x4 mat1 = glm::mat4x4(1.0f);
+		// && scene.GetActiveModel(scene.getActiveModelToWork()).GetModelName() == meshModel[i].GetModelName()
+		//we need to find a solution that more than one camera can be and every camera can take a model and change only this model
+		if (scene.GetActiveCameraIndex() != -1)
+			mat1 = scene.GetActiveCamera().GetViewTransformation();
+
+		glm::mat4x4 mat = meshModel[i].transformationMat();
+		mat = mat1 * mat;
 		for (int j = 0; j < faces.size(); j++) {
 			int v1 = faces[j].GetVertexIndex(0) - 1;
 			int v2 = faces[j].GetVertexIndex(1) - 1;
@@ -290,33 +446,40 @@ void Renderer::Render(const Scene& scene)
 			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
 
 			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
-			cords[0].x = transformP1.x / transformP1.w;
-			cords[0].y = transformP1.y / transformP1.w;
-			cords[0].z = transformP1.z;
-			if (!meshModel[i].localTrans)
-				cords[0].z /= transformP1.w;
+
+			if (transformP1.w != 0) {
+				cords[0].x = transformP1.x / transformP1.w;
+				cords[0].y = transformP1.y / transformP1.w;
+				cords[0].z = transformP1.z / transformP1.w;
+			}
+			else {
+				cords[0].x = transformP1.x;
+				cords[0].y = transformP1.y;
+				cords[0].z = transformP1.z;
+			}
 
 			glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
-			cords[1].x = transformP2.x / transformP2.w;
-			cords[1].y = transformP2.y / transformP2.w;
-			cords[1].z = transformP2.z;
-			if (!meshModel[i].localTrans)
-				cords[1].z /= transformP2.w;
-
+			if (transformP2.w != 0) {
+				cords[1].x = transformP2.x / transformP2.w;
+				cords[1].y = transformP2.y / transformP2.w;
+				cords[1].z = transformP2.z / transformP2.w;
+			}
+			else {
+				cords[1].x = transformP2.x;
+				cords[1].y = transformP2.y;
+				cords[1].z = transformP2.z;
+			}
 			glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
-			cords[2].x = transformP3.x / transformP3.w;
-			cords[2].y = transformP3.y / transformP3.w;
-			cords[2].z = transformP3.z;
-			if (!meshModel[i].localTrans)
-				cords[2].z /= transformP3.w;
-
-			cords[0].x += half_width;
-			cords[1].x += half_width;
-			cords[2].x += half_width;
-
-			cords[0].y += half_height;
-			cords[1].y += half_height;
-			cords[2].y += half_height;
+			if (transformP3.w != 0) {
+				cords[2].x = transformP3.x / transformP3.w;
+				cords[2].y = transformP3.y / transformP3.w;
+				cords[2].z = transformP3.z / transformP3.w;
+			}
+			else {
+				cords[2].x = transformP3.x;
+				cords[2].y = transformP3.y;
+				cords[2].z = transformP3.z;
+			}
 
 			if (cords[0].x > cords[1].x)
 				DrawTriangle(cords[2], cords[1], cords[0], meshModel[i].getColor());
@@ -325,7 +488,32 @@ void Renderer::Render(const Scene& scene)
 			else
 				DrawTriangle(cords[0], cords[2], cords[1], meshModel[i].getColor());
 
+			if (meshModel[i].vertexNormals) {
+				glm::vec3 normal1 = meshModel[i].GetNormal(faces[j].GetNormalIndex(0) - 1);
+				glm::vec3 normal2 = meshModel[i].GetNormal(faces[j].GetNormalIndex(1) - 1);
+				glm::vec3 normal3 = meshModel[i].GetNormal(faces[j].GetNormalIndex(2) - 1);
+				glm::vec2 distance0 = glm::vec2(cords[0].x + (normal1.x * 40), cords[0].y + (normal1.y * 40));
+				glm::vec2 distance1 = glm::vec2(cords[1].x + (normal2.x * 40), cords[1].y + (normal2.y * 40));
+				glm::vec2 distance2 = glm::vec2(cords[2].x + (normal3.x * 40), cords[2].y + (normal3.y * 40));
+
+				DrawLine(cords[0], distance0, meshModel[i].getColor());
+				DrawLine(cords[1], distance1, meshModel[i].getColor());
+				DrawLine(cords[2], distance2, meshModel[i].getColor());
+			}
+			if (meshModel[i].faceNormals) {
+
+				glm::vec3 middleOfFace = (cords[1] + cords[0] + cords[2]);
+				middleOfFace /= 3;
+				glm::vec3 faceNormal = glm::normalize(glm::cross(cords[1] - cords[0], cords[2] - cords[0]));
+				faceNormal *= 40;
+				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), meshModel[i].getColor());
+			}
 		}
+
+		if (meshModel[i].boundBox) {
+			drawBoudingBox(scene, meshModel[i]);
+		}
+		drawModelAxies(scene, meshModel[i]);
 
 	}
 
@@ -336,6 +524,23 @@ void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm:
 	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
 	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
 	DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
+}
+
+void Renderer::updateViewport()
+{
+	CreateBuffers(this->viewport_width, this->viewport_height);
+}
+
+
+void Renderer::setViewportHeight(int height)
+{
+	this->viewport_height = height;
+}
+
+void Renderer::setViewportWidth(int width)
+{
+	this->viewport_width = width;
+
 }
 
 int Renderer::GetViewportWidth() const
