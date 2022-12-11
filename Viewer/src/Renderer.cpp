@@ -98,9 +98,12 @@ void Renderer::drawWorldAxies(Camera camera)
 	//we're not sure that we need to translate the world axies
 	glm::mat4x4 mat = camera.GetViewTransformation();
 	glm::fvec4 worldAxies = mat * glm::fvec4(0, 0, 0, 1);
-	glm::fvec4 worldX = mat * glm::fvec4(viewport_width + worldAxies[0], 0, 0, 1);
-	glm::fvec4 worldY = mat * glm::fvec4(0, viewport_height + worldAxies[1], 0, 1);
-	glm::fvec4 worldZ = mat * glm::fvec4(0, 0, viewport_width + worldAxies[0], 1);
+	glm::fvec4 worldX;
+	glm::fvec4 worldY;
+	worldX = mat * glm::fvec4(viewport_width + worldAxies[0], 0, 0, 1);
+	worldY = mat * glm::fvec4(0, viewport_height + worldAxies[1], 0, 1);
+
+	glm::fvec4 worldZ = mat * glm::fvec4(0, 0, viewport_height, 1);
 
 	worldAxies.x /= worldAxies.w;
 	worldAxies.y /= worldAxies.w;
@@ -271,8 +274,6 @@ void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const g
 
 void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 {
-	//A function to draw the model axies
-	//here we only move the bouding box by world transformations or camera transformations
 	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
@@ -282,9 +283,9 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	mat = mat1 * mat;
 
 	glm::fvec4 modelAxies = mat * glm::fvec4(0, 0, 0, 1);
-	glm::fvec4 localX = mat * glm::fvec4(80, 0, 0, 1);
-	glm::fvec4 localY = mat * glm::fvec4(0, 80, 0, 1);
-	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 80, 1);
+	glm::fvec4 localX = mat * glm::fvec4(140, 0, 0, 1);
+	glm::fvec4 localY = mat * glm::fvec4(0, 140, 0, 1);
+	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 140, 1);
 
 	DrawLine(modelAxies, localX, glm::fvec3(0, 0, 0));
 	DrawLine(modelAxies, localY, glm::fvec3(0, 1, 1));
@@ -318,11 +319,9 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
-
 void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 {
-	//A function to draw the bouding box
-	//here we only move the bouding box by world transformations or camera transformations
+	//we neeed to divide by f.w
 	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
@@ -347,7 +346,7 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 
 	glm::fvec4 f3 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.max_z, 1);
 
-	//we connect every coordinate with the neighbors
+
 	DrawLine(f0, f1, glm::vec3(1, 1, 1));
 	DrawLine(f0, f4, glm::vec3(1, 1, 1));
 	DrawLine(f0, f3, glm::vec3(1, 1, 1));
@@ -367,7 +366,7 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 
 void Renderer::drawCameras(Scene& scene)
 {
-	//A function to draw the active cameras
+	//we need to draw it in the right way.. 
 	std::vector<Face> faces = scene.GetActiveCamera().getFaces();
 	std::vector<glm::fvec3> vertices = scene.GetActiveCamera().getVertices();
 	glm::mat4x4 mat = scene.GetActiveCamera().GetWorldTransformations();
@@ -406,11 +405,12 @@ void Renderer::drawCameras(Scene& scene)
 		else
 			DrawTriangle(cords[0], cords[2], cords[1], glm::fvec3(0));
 	}
+
+	//}
 }
 
 
-void Renderer::Render(const Scene& scene)
-
+void Renderer::Render(Scene& scene)
 {
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
@@ -431,8 +431,6 @@ void Renderer::Render(const Scene& scene)
 
 		//we need to multiply by camera transformation
 		glm::mat4x4 mat1 = glm::mat4x4(1.0f);
-		// && scene.GetActiveModel(scene.getActiveModelToWork()).GetModelName() == meshModel[i].GetModelName()
-		//we need to find a solution that more than one camera can be and every camera can take a model and change only this model
 		if (scene.GetActiveCameraIndex() != -1)
 			mat1 = scene.GetActiveCamera().GetViewTransformation();
 
@@ -446,7 +444,6 @@ void Renderer::Render(const Scene& scene)
 			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
 
 			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
-
 			if (transformP1.w != 0) {
 				cords[0].x = transformP1.x / transformP1.w;
 				cords[0].y = transformP1.y / transformP1.w;
@@ -540,7 +537,6 @@ void Renderer::setViewportHeight(int height)
 void Renderer::setViewportWidth(int width)
 {
 	this->viewport_width = width;
-
 }
 
 int Renderer::GetViewportWidth() const
