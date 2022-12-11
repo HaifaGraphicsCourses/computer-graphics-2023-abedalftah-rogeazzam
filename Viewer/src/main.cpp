@@ -24,11 +24,14 @@ bool useMouse = false;
 bool useKeyboard = false;
 static bool localTrans = false;
 static bool worldTrans = false;
+static bool cameraWorldTrans = false;
 static char modelName[100];
 static double mouseX = 640;
 static double mouseY = 360;
+static float fov = 45;
 glm::vec4 clear_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
 glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+static int num = 0, number = 0, number1 = 0;
 
 /**
  * Function declarations
@@ -57,15 +60,6 @@ int main(int argc, char** argv)
 	if (!window)
 		return 1;
 
-	//glm::fmat4x4 worldMatrix = glm::fmat4(1.0f);
-	//glm::fmat4x4 w = glm::translate(worldMatrix, glm::vec3(5, 5, 5));
-	//for (int i = 0; i < 4; i++) {
-	//	for (int j = 0; j < 4; j++) {
-	//		std::cout << w[i][j] << " ";
-	//	}
-	//	std::cout << std::endl;
-	//}
-
 	int frameBufferWidth, frameBufferHeight;
 	glfwMakeContextCurrent(window);
 	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
@@ -73,11 +67,11 @@ int main(int argc, char** argv)
 	Renderer renderer = Renderer(frameBufferWidth, frameBufferHeight);
 	Scene scene = Scene();
 
-
-	//we changed the private fields in meshmodel to public
-	//the solution of the first question
-
-
+	//we need to add the first camera so we can see the world axies and the model in the 0, 0, 0 in the
+	//world axies
+	//without a camera we need to back the trick that we used in the second home work..
+	scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
+	scene.SetActiveCameraIndex(0);
 
 
 	ImGuiIO& io = SetupDearImgui(window);
@@ -143,15 +137,17 @@ void StartFrame()
 void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& io)
 {
 	ImGui::Render();
+	int windowW, windowH;
 	int frameBufferWidth, frameBufferHeight;
 	glfwMakeContextCurrent(window);
 	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
 
-
-
 	if (frameBufferWidth != renderer.GetViewportWidth() || frameBufferHeight != renderer.GetViewportHeight())
 	{
-		// TODO: Set new aspect ratio
+		Renderer renderer = Renderer(frameBufferWidth, frameBufferHeight);
+		glfwSetWindowAspectRatio(window, renderer.GetViewportWidth(), renderer.GetViewportHeight());
+		mouseX = frameBufferWidth / 2;
+		mouseY = frameBufferHeight / 2;
 	}
 
 	if (!io.WantCaptureKeyboard && useKeyboard)
@@ -264,7 +260,16 @@ void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& 
 			}
 		}
 	}
-
+	//we need to get the active cameras
+	if (!io.WantCaptureKeyboard && cameraWorldTrans) {
+		if (io.KeysDown['L']) {
+			scene.GetCamera(0).worldTransVec[0] -= 10;
+		}
+		else if (io.KeysDown['R']) {
+			scene.GetCamera(0).worldTransVec[0] += 10;
+		}
+		scene.GetCamera(0).updateWorldTransformation();
+	}
 	if (!io.WantCaptureMouse && useMouse)
 	{
 		// TODO: Handle mouse events here
@@ -383,7 +388,10 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		int modelIndex = -1;
 
 		static bool transWindow = false;
-
+		static bool cameraWindow = false;
+		static bool ortho = false;
+		static bool persp = false;
+		static bool moreFeatures = false;
 
 
 		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
@@ -392,14 +400,16 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Another Window", &show_another_window);
 		ImGui::Checkbox("Object Control Window", &transWindow);
+		ImGui::Checkbox("Camera Control Window", &cameraWindow);
+		ImGui::Checkbox("Draw World Axis", &scene.GetActiveCamera().drawWorldAxisFlag);
 
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+		//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
+		//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+		//	counter++;
+		//ImGui::SameLine();
+		//ImGui::Text("counter = %d", counter);
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
@@ -412,7 +422,9 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::Checkbox("Move Obj by keyBoard", &useKeyboard);
 			ImGui::ColorEdit3("model color", (float*)&model_color); // Edit 3 floats representing a color
 			ImGui::Checkbox("Local Transformations", &localTrans);
+			ImGui::SameLine();
 			ImGui::Checkbox("World Transformations", &worldTrans);
+			ImGui::Checkbox("Advanced features", &moreFeatures);
 			ImGui::End();
 
 			if (useKeyboard) {
@@ -434,6 +446,14 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				}
 			}
 
+			if (moreFeatures && modelIndex != -1) {
+				MeshModel& model = scene.GetActiveModel(modelIndex);
+				ImGui::Begin("Advanced features");
+				ImGui::Checkbox("Bound Box", &model.boundBox);
+				ImGui::Checkbox("Face Normals", &model.faceNormals);
+				ImGui::Checkbox("Vertices Normals", &model.vertexNormals);
+				ImGui::End();
+			}
 			//if we update the object by local or world transformations I did not save the 
 			//transformation vectors, if we change the selected object the other object will have the same
 			//transformations we did for the old one and if we change back to the old object
@@ -500,6 +520,69 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				scene.GetModel(i).localTrans = false;
 			}
 		}
+		//we need to get for all the active cameras
+		if (cameraWindow) {
+
+			ImGui::Begin("Camera Control");
+			ImGui::Checkbox("Draw Cameras", &scene.drawCameras);
+			ImGui::InputInt("Camera Index", &num, number, number1, false);
+			ImGui::Checkbox("Orthographic", &ortho);
+			ImGui::Checkbox("Perspective", &persp);
+			ImGui::Checkbox("Incremental Changes", &cameraWorldTrans);
+			if (ImGui::Button("Add Camera")) {
+				scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
+			}
+			if (num >= 0 && num < scene.GetCameraCount())
+				scene.SetActiveCameraIndex(num);
+			else {
+				ImGui::Begin("Error Camera Index");
+				ImGui::Text("Please enter a valid camera Index from 0 to %d", scene.GetCameraCount() - 1);
+				ImGui::End();
+			}
+			ImGui::End();
+			if (ortho && scene.GetActiveCameraIndex() != -1) {
+				ImGui::Begin("Orthographic buttons");
+				ImGui::SliderFloat("bottom", &scene.GetActiveCamera().bottom, -10, 10);
+				ImGui::SliderFloat("top", &scene.GetActiveCamera().top, -10, 10);
+				ImGui::SliderFloat("left", &scene.GetActiveCamera().left, -10, 10);
+				ImGui::SliderFloat("right", &scene.GetActiveCamera().right, -10, 10);
+				ImGui::SliderFloat("near", &scene.GetActiveCamera().nearr, -100, 100);
+				ImGui::SliderFloat("far", &scene.GetActiveCamera().farr, -100, 100);
+				//ImGui::SliderFloat("far", &scene.GetActiveCamera()., -100, 100);
+				scene.GetActiveCamera().updateOrth();
+				ImGui::End();
+			}
+			else if (persp && scene.GetActiveCameraIndex() != -1) {
+				fov = glm::degrees(scene.GetActiveCamera().fovy);
+				scene.GetActiveCamera().isItPers = true;
+				ImGui::Begin("Perspective buttons");
+				ImGui::SliderFloat("Fovy", &fov, -180, 180);
+				ImGui::SliderFloat("aspect", &scene.GetActiveCamera().aspect, 0, 10);
+				ImGui::SliderFloat("near", &scene.GetActiveCamera().pernear, -10, 10);
+				ImGui::SliderFloat("far", &scene.GetActiveCamera().perfar, -10, 10);
+				scene.GetActiveCamera().fovy = glm::radians(fov);
+				scene.GetActiveCamera().updatePers();
+
+				ImGui::End();
+			}
+			if (!persp && scene.GetActiveCameraIndex() != -1)
+				scene.GetActiveCamera().isItPers = false;
+
+			if (cameraWorldTrans && scene.GetActiveCameraIndex() != -1) {
+				ImGui::Begin("Camera Translate");
+				ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().worldTransVec[0], -720, 720);
+				ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().worldTransVec[1], -1280, 1280);
+				ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().worldTransVec[2], -15, 15);
+
+				ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().worldRotateVec[0], -360, 360);
+				ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().worldRotateVec[1], -360, 360);
+				ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().worldRotateVec[2], -360, 360);
+				ImGui::End();
+
+				scene.GetActiveCamera().updateWorldTransformation();
+			}
+		}
+
 	}
 
 	// 3. Show another simple window.
