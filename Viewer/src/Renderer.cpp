@@ -318,6 +318,7 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
+
 void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 {
 	//A function to draw the bouding box
@@ -408,7 +409,8 @@ void Renderer::drawCameras(Scene& scene)
 }
 
 
-void Renderer::Render(Scene& scene)
+void Renderer::Render(const Scene& scene)
+
 {
 	// TODO: Replace this code with real scene rendering code
 	int half_width = viewport_width / 2;
@@ -444,6 +446,7 @@ void Renderer::Render(Scene& scene)
 			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
 
 			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+
 			if (transformP1.w != 0) {
 				cords[0].x = transformP1.x / transformP1.w;
 				cords[0].y = transformP1.y / transformP1.w;
@@ -537,6 +540,7 @@ void Renderer::setViewportHeight(int height)
 void Renderer::setViewportWidth(int width)
 {
 	this->viewport_width = width;
+
 }
 
 int Renderer::GetViewportWidth() const

@@ -93,6 +93,7 @@ void Scene::TurnOffActiveModel(int index)
 
 }
 
+
 vector<int> Scene::GetActiveModelsIndexes() const
 {
 	return active_model_index;
