@@ -24,8 +24,8 @@ std::shared_ptr<MeshModel> Utils::LoadMeshModel(const std::string& filePath)
 {
 	std::vector<Face> faces;
 	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec2> textures;
 	std::vector<glm::vec3> normals;
-	std::vector<glm::vec2> texture;
 	std::ifstream ifile(filePath.c_str());
 
 	// while not end of file
@@ -52,8 +52,7 @@ std::shared_ptr<MeshModel> Utils::LoadMeshModel(const std::string& filePath)
 		}
 		else if (lineType == "vt")
 		{
-			// TODO: Handle texture coordinates
-			texture.push_back(Utils::Vec2fFromStream(issLine));
+			textures.push_back(Utils::Vec3fFromStream(issLine));
 		}
 		else if (lineType == "f")
 		{
@@ -68,9 +67,60 @@ std::shared_ptr<MeshModel> Utils::LoadMeshModel(const std::string& filePath)
 			std::cout << "Found unknown line Type \"" << lineType << "\"";
 		}
 	}
-
 	std::string s = Utils::GetFileName(filePath);
-	return std::make_shared<MeshModel>(faces, vertices, normals, texture, s.substr(0, s.length() - 4));
+	return std::make_shared<MeshModel>(faces, vertices, normals, textures, s.substr(0, s.length() - 4));
+	//	return std::make_shared<Camera>(faces, vertices, normals, textures, s.substr(0, s.length() - 4));
+}
+
+std::shared_ptr<Camera> Utils::LoadCamera(const std::string& filePath)
+{
+	std::vector<Face> faces;
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec2> textures;
+	std::vector<glm::vec3> normals;
+	std::ifstream ifile(filePath.c_str());
+
+	// while not end of file
+	while (!ifile.eof())
+	{
+		// get line
+		std::string curLine;
+		std::getline(ifile, curLine);
+
+		// read the type of the line
+		std::istringstream issLine(curLine);
+		std::string lineType;
+
+		issLine >> std::ws >> lineType;
+
+		// based on the type parse data
+		if (lineType == "v")
+		{
+			vertices.push_back(Utils::Vec3fFromStream(issLine));
+		}
+		else if (lineType == "vn")
+		{
+			normals.push_back(Utils::Vec3fFromStream(issLine));
+		}
+		else if (lineType == "vt")
+		{
+			textures.push_back(Utils::Vec3fFromStream(issLine));
+		}
+		else if (lineType == "f")
+		{
+			faces.push_back(Face(issLine));
+		}
+		else if (lineType == "#" || lineType == "")
+		{
+			// comment / empty line
+		}
+		else
+		{
+			std::cout << "Found unknown line Type \"" << lineType << "\"";
+		}
+	}
+	std::string s = Utils::GetFileName(filePath);
+	return std::make_shared<Camera>(faces, vertices, normals, textures, s.substr(0, s.length() - 4));
 }
 
 std::string Utils::GetFileName(const std::string& filePath)

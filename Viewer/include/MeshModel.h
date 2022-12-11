@@ -10,26 +10,20 @@ public:
 	MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, std::vector<glm::vec3> normals, std::vector<glm::vec2> texture, const std::string& model_name);
 	virtual ~MeshModel();
 	const Face& GetFace(int index) const;
+	glm::vec3 GetNormal(int index);
 	int GetFacesCount() const;
 	const std::string& GetModelName() const;
 	glm::mat4 MeshModel::transformationMat() const;
+	glm::mat4 worldTransMat();
 	std::vector<Face> getFaces();
 	std::vector<glm::vec3> getVertices();
 	glm::fvec3 MeshModel::getColor();
 	void MeshModel::setColor(glm::fvec3 color);
-	//std::vector<glm::fvec3> MeshModel::updateVertices();
 
 	void updateWorldMatrix();
 	void updateLocalMatrix();
 
 	bool localTrans = false;
-	//double midX = 0;
-	//double midY = 0;
-
-	//void setX(float x);
-	//float getX();
-	//void setY(float y);
-	//float getY();
 
 	glm::vec3 localScaleVec = glm::fvec3(1, 1, 1);
 	glm::vec3 localRotateVec = glm::fvec3(0, 0, 0);
@@ -40,6 +34,11 @@ public:
 	glm::vec3 worldRotateVec = glm::fvec3(0, 0, 0);
 	float worldDegreeToRotate = 0;
 	glm::vec3 worldTransVec = glm::fvec3(0, 0, 0);
+
+	float mid_x = 0, mid_y = 0, mid_z = 0;
+	float max_x = 0, max_y = 0, max_z = 0, min_x = 0, min_y = 0, min_z = 0;
+
+	bool faceNormals = false, vertexNormals = false, boundBox = false;
 private:
 
 	float x = 0;
