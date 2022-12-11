@@ -8,12 +8,19 @@ class Renderer
 public:
 	Renderer(int viewportWidth, int viewportHeight);
 	virtual ~Renderer();
-	void Render(const Scene& scene);
+	void Render( Scene& scene);
 	void SwapBuffers();
 	void ClearColorBuffer(const glm::vec3& color);
 	int GetViewportWidth() const;
 	int GetViewportHeight() const;
-	
+	void updateViewport();
+	void setViewportWidth(int width);
+	void setViewportHeight(int height);
+	void drawWorldAxies(Camera camera);
+	void drawModelAxies(Scene& scene, MeshModel meshModel);
+	void drawBoudingBox(Scene& scene, MeshModel meshModel);
+	void drawCameras(Scene& scene);
+	void DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color);
 private:
 	void PutPixel(const int i, const int j, const glm::vec3& color);
 	void DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::vec3& color);
@@ -24,7 +31,7 @@ private:
 	void CreateOpenglBuffer();
 	void InitOpenglRendering();
 
-	float* color_buffer;
+	float* color_buffer = NULL;
 	int viewport_width;
 	int viewport_height;
 	GLuint gl_screen_tex;
