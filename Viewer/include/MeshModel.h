@@ -19,6 +19,7 @@ public:
 	std::vector<glm::vec3> getVertices();
 	glm::fvec3 MeshModel::getColor();
 	void MeshModel::setColor(glm::fvec3 color);
+	void calculateExtremes();
 
 	void updateWorldMatrix();
 	void updateLocalMatrix();
@@ -38,7 +39,7 @@ public:
 	float mid_x = 0, mid_y = 0, mid_z = 0;
 	float max_x = 0, max_y = 0, max_z = 0, min_x = 0, min_y = 0, min_z = 0;
 
-	bool faceNormals = false, vertexNormals = false, boundBox = false;
+	bool faceNormals = false, vertexNormals = false, boundBox = false, boundBoxWorld = false;
 private:
 
 	float x = 0;

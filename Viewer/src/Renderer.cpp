@@ -319,16 +319,25 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
-void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
+void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
 {
 	//we neeed to divide by f.w
 	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
-	if (scene.GetActiveCameraIndex() != -1)
+	if (scene.GetActiveCameraIndex() != -1) {
 		mat1 = scene.GetActiveCamera().GetViewTransformation();
+	}
 
+	if (isLocal) {
+		mat = meshModel.transformationMat();
+	}
+	else {
+		mat = glm::mat4x4(1.0f);
+		meshModel.calculateExtremes();
+	}
 	mat = mat1 * mat;
+
 	glm::fvec4 f0 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.max_z, 1);
 
 	glm::fvec4 f1 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.min_z, 1);
@@ -508,7 +517,10 @@ void Renderer::Render(Scene& scene)
 		}
 
 		if (meshModel[i].boundBox) {
-			drawBoudingBox(scene, meshModel[i]);
+			drawBoudingBox(scene, meshModel[i], 1);
+		}
+		if (meshModel[i].boundBoxWorld) {
+			drawBoudingBox(scene, meshModel[i], 0);
 		}
 		drawModelAxies(scene, meshModel[i]);
 

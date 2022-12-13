@@ -24,7 +24,9 @@ bool useMouse = false;
 bool useKeyboard = false;
 static bool localTrans = false;
 static bool worldTrans = false;
+static bool incChanges = false;
 static bool cameraWorldTrans = false;
+static bool cameraLocalTrans = false;
 static char modelName[100];
 static double mouseX = 640;
 static double mouseY = 360;
@@ -452,7 +454,8 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			if (moreFeatures && modelIndex != -1) {
 				MeshModel& model = scene.GetActiveModel(modelIndex);
 				ImGui::Begin("Advanced features");
-				ImGui::Checkbox("Bound Box", &model.boundBox);
+				ImGui::Checkbox("Local Bound Box", &model.boundBox);
+				ImGui::Checkbox("World Bound Box", &model.boundBoxWorld);
 				ImGui::Checkbox("Face Normals", &model.faceNormals);
 				ImGui::Checkbox("Vertices Normals", &model.vertexNormals);
 				ImGui::End();
@@ -531,7 +534,11 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::InputInt("Camera Index", &num, number, number1, false);
 			ImGui::Checkbox("Orthographic", &ortho);
 			ImGui::Checkbox("Perspective", &persp);
-			ImGui::Checkbox("Incremental Changes", &cameraWorldTrans);
+			ImGui::Checkbox("Incremental Changes", &incChanges);
+			if (incChanges) {
+				ImGui::Checkbox("World Transformations", &cameraWorldTrans);
+				ImGui::Checkbox("Local Transformations", &cameraLocalTrans);
+			}
 
 			if (ImGui::Button("Add Camera")) {
 				scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
@@ -577,19 +584,33 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			}
 			if (!persp && scene.GetActiveCameraIndex() != -1)
 				scene.GetActiveCamera().isItPers = false;
+			if (incChanges) {
+				if (cameraWorldTrans && scene.GetActiveCameraIndex() != -1) {
+					ImGui::Begin("Camera Translate");
+					ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().worldTransVec[0], -720, 720);
+					ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().worldTransVec[1], -1280, 1280);
+					ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().worldTransVec[2], -15, 15);
 
-			if (cameraWorldTrans && scene.GetActiveCameraIndex() != -1) {
-				ImGui::Begin("Camera Translate");
-				ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().worldTransVec[0], -720, 720);
-				ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().worldTransVec[1], -1280, 1280);
-				ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().worldTransVec[2], -15, 15);
+					ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().worldRotateVec[0], -360, 360);
+					ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().worldRotateVec[1], -360, 360);
+					ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().worldRotateVec[2], -360, 360);
+					ImGui::End();
 
-				ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().worldRotateVec[0], -360, 360);
-				ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().worldRotateVec[1], -360, 360);
-				ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().worldRotateVec[2], -360, 360);
-				ImGui::End();
+					scene.GetActiveCamera().updateWorldTransformation();
+				}
+				if (cameraLocalTrans && scene.GetActiveCameraIndex() != -1) {
+					ImGui::Begin("Camera Translate");
+					ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().localTransVec[0], -720, 720);
+					ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().localTransVec[1], -1280, 1280);
+					ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().localTransVec[2], -15, 15);
 
-				scene.GetActiveCamera().updateWorldTransformation();
+					ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().localRotateVec[0], -360, 360);
+					ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().localRotateVec[1], -360, 360);
+					ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().localRotateVec[2], -360, 360);
+					ImGui::End();
+
+					scene.GetActiveCamera().updateLocalTransformation();
+				}
 			}
 		}
 

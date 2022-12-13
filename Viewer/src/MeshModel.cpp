@@ -206,3 +206,23 @@ glm::mat4 MeshModel::transformationMat() const
 glm::mat4 MeshModel::worldTransMat() {
 	return worldMatrixT * worldMatrixS * worldMatrixRX * worldMatrixRY * worldMatrixRZ;
 }
+
+void MeshModel:: calculateExtremes()
+{
+	for (int i = 0; i < vertices.size(); i++) {
+		glm::fvec4 vertex = this->transformationMat() * glm::fvec4(this->vertices[i], 1);
+		if (vertex.x > max_x || i == 0)
+			max_x = vertex.x;
+		if (vertex.y > max_y || i == 0)
+			max_y = vertex.y;
+		if (vertex.z > max_z || i == 0)
+			max_z = vertex.z;
+
+		if (vertex.x < min_x || i == 0)
+			min_x = vertex.x;
+		if (vertex.y < min_y || i == 0)
+			min_y = vertex.y;
+		if (vertex.z < min_z || i == 0)
+			min_z = vertex.z;
+	}
+}

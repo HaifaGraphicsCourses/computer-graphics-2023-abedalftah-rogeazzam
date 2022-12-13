@@ -18,7 +18,7 @@ public:
 	void setViewportHeight(int height);
 	void drawWorldAxies(Camera camera);
 	void drawModelAxies(Scene& scene, MeshModel meshModel);
-	void drawBoudingBox(Scene& scene, MeshModel meshModel);
+	void drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal);
 	void drawCameras(Scene& scene);
 	void DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color);
 private:
