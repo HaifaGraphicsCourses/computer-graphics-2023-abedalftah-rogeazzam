@@ -78,7 +78,7 @@ const glm::mat4x4& Camera::GetViewTransformation()
 		mat = adjustMat * ortho * mat * invMat;
 	}
 	else {
-		mat = adjustMat * pers * mat * invMat * scaleDown;
+		mat = glm::fmat4(adjustMat) * pers * mat * invMat * scaleDown;
 	}
 	return mat;
 }
@@ -149,6 +149,14 @@ void Camera::updateOrth()
 
 void Camera::updatePers()
 {
+	/*pers = glm::mat4(1.0f);
+	pers[3][3] = 0;
+	pers[0][0] = 1 / (tan(fovy / 2) * aspect);
+	pers[1][1] = 1 / (tan(fovy / 2));
+	pers[2][2] = -1 * (perfar + pernear) / (pernear - perfar);
+	pers[3][2] = 1;
+	pers[2][3] = 2 * perfar * pernear / (pernear - perfar);*/
+
 	pers = glm::perspective(fovy, aspect, pernear, perfar);
 }
 

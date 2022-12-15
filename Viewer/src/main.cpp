@@ -27,6 +27,7 @@ static bool worldTrans = false;
 static bool incChanges = false;
 static bool cameraWorldTrans = false;
 static bool cameraLocalTrans = false;
+static bool lookatCB = false;
 static char modelName[100];
 static double mouseX = 640;
 static double mouseY = 360;
@@ -534,6 +535,7 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::InputInt("Camera Index", &num, number, number1, false);
 			ImGui::Checkbox("Orthographic", &ortho);
 			ImGui::Checkbox("Perspective", &persp);
+			ImGui::Checkbox("Look At Values", &lookatCB);
 			ImGui::Checkbox("Incremental Changes", &incChanges);
 			if (incChanges) {
 				ImGui::Checkbox("World Transformations", &cameraWorldTrans);
@@ -611,6 +613,12 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 
 					scene.GetActiveCamera().updateLocalTransformation();
 				}
+			}
+
+			if (lookatCB) {
+				ImGui::SliderFloat("Eye X Value", &scene.GetActiveCamera().eye.x, -30, 30);
+				ImGui::SliderFloat("Eye Y Value", &scene.GetActiveCamera().eye.y, -30, 30);
+				ImGui::SliderFloat("Eye Z Value", &scene.GetActiveCamera().eye.z, -30, 30);
 			}
 		}
 

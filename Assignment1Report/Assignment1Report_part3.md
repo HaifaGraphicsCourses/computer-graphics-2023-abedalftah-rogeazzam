@@ -17,7 +17,7 @@ We opened the "cow.obj", the initialization looked like this:
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/FirstReq1.png)
 
 
-We changed the ups,downs,... , and got the following results:
+We changed the ups,downs,left,right and near,far, then applied the glm::orthographic function on the new values, then multiply it by look at and transformation matrices (implement look at matrix by applying glm::lookAt function, giving it eye, at, up values) , and got the following results:
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/FirstReq2.png)
@@ -31,14 +31,14 @@ Requirement 2:
 
 Just Like the mesh transformations from the previous assignment, we apply transformations by multiplying world * local (implementation done in Camera class), in this order: translate * rotate, then we apply inverse to the result matrix (Instead of transforming the camera, we inverse transform the mesh's and keep the camera at the "eye" location looking at "at" coordinate and the "up" being Y axis).
 Here's an example of applying:
-translate x - 300
-translate y - -200
-rotate y - 50
-rotate z - -30
+translate x - 300 (world) 
+translate y - -150 (world) 
+rotate y - 50 (local) 
+rotate z - -30 (local) 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SecondReq.png)
 
-Also, By pressing the "Show World Axis" checkbox and choosing incremental changes, you can start translating the camera's X axis left and right by pressing R and L keyboard keys.
+Also, By pressing the "Incremental Changes" checkbox and choosing world transformations, you can start translating the camera's X axis left and right by pressing R and L keyboard keys.
 
 
 Requirement 3:
@@ -92,18 +92,14 @@ Making approximatly same transformations in the world frame then in the local fr
 
 Requirement 6:
 
-Initially, loading "bunny.obj" and showing the bounding box by pressing "Advanced features" checkbox, then pressing "bound box" checkbox:
+Transforming (translating then rotating) the mesh both in the local and world frame, and showing the local Bounding Box:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq1.png)
 
-
-Transforming (translating then rotating) the mesh in the local frame: (The bounding box appears in white)
+Transforming (translating then rotating) the mesh both in the local and world frame, and showing the world Bounding Box:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq2.png)
 
-Transforming (translating then rotating) the mesh in the world frame:
-
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq3.png)
 
 
 Requirement 7:
@@ -119,15 +115,15 @@ Showing vertices normals after making transformations:
 
 Requirement 8:
 
-Implementing Orthographic projection:
+Implementing Orthographic projection (Using glm::orthographic to get the orthographic project, and multiplying it by look at and transformation matrices):
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/EigthReq1.png)
 
-Implementing Orthographic projection and moving the camera closer (as you can see there's no visible change):
+Implementing Orthographic projection and moving the camera away (as you can see there's no visible change):
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/EigthReq2.png)
 
-Implementing Perspective projection:
+Implementing Perspective projection (Using glm::perspective):
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/EigthReq3.png)
 
@@ -175,6 +171,8 @@ Making Dolly zoom:
 
 Requirement 12:
 
+You can choose which camera index you'd like to use (each has it's own orthographic/perspective, look at and transformations)
+
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TwelvthReq1.png)
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TwelvthReq2.jpeg)
@@ -182,21 +180,36 @@ Requirement 12:
 
 Requirement 13:
 
-Here you can show the World Axis, Bound Box, Vertices normals and face normals, for the mesh written in the "which model?" bar:
+Here you can choose Object control window checkbox, and show the mesh written in the "which model?" bar (and pressing Turn On checkbox):
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq1.png)
 
-After opening the Camera Control Window, you can choose either Orthographic or Perspective projection, by choosing Orthographic a windo for changing up, down,... values will open:
+By pressing the "Advanced features" checkbox you can control the local/world Bounding Box, and showing faces/vertices normals:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq2.png)
 
-By choosing Perspective a different window for fovy, aspect, near, far values will open:
+After opening the Camera Control Window, you can choose either Orthographic or Perspective projection, by choosing Orthographic a window for changing up, down,lft,right and near,far values(for the orthographic matrix) will open:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq3.png)
 
-Choosing incremental changes a window for the camera transformations will open (Inverse will be made to the mesh):
+By choosing Perspective a different window for fovy, aspect, near, far values(for the perspective matrix) will open:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq4.png)
+
+By choosing Look At values, a window for changin the Eye values (That will affect the position of the camera, by changing the look at matrix for the camera)
+
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq5.png)
+
+
+Choosing incremental changes will give two options: World or Local:
+
+
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq6.png)
+
+
+After choosing one a window for the camera transformations will open (Inverse will be made to the mesh):
+
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/TherteenReq7.png)
 
 
 Requirement 14:
