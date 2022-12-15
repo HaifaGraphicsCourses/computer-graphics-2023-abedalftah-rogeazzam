@@ -92,6 +92,15 @@ Making approximatly same transformations in the world frame then in the local fr
 
 Requirement 6:
 
+Transforming (translating then rotating) the mesh both in the local and world frame, and showing the local Bounding Box:
+
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq1.png)
+
+Transforming (translating then rotating) the mesh both in the local and world frame, and showing the world Bounding Box:
+
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq2.png)
+
+
 
 Requirement 7:
 
