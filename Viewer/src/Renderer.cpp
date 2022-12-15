@@ -287,6 +287,22 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	glm::fvec4 localY = mat * glm::fvec4(0, 140, 0, 1);
 	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 140, 1);
 
+	modelAxies.x /= modelAxies.w;
+	modelAxies.y /= modelAxies.w;
+	modelAxies.z /= modelAxies.w;
+
+	localX.x /= localX.w;
+	localX.y /= localX.w;
+	localX.z /= localX.w;
+
+	localY.x /= localY.w;
+	localY.y /= localY.w;
+	localY.z /= localY.w;
+
+	localZ.x /= localZ.w;
+	localZ.y /= localZ.w;
+	localZ.z /= localZ.w;
+
 	DrawLine(modelAxies, localX, glm::fvec3(0, 0, 0));
 	DrawLine(modelAxies, localY, glm::fvec3(0, 1, 1));
 	DrawLine(modelAxies, localZ, glm::fvec3(1, 0, 1));
@@ -355,22 +371,31 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
 
 	glm::fvec4 f3 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.max_z, 1);
 
+	f0.x /= f0.w; f0.y /= f0.w; f0.z /= f0.w;
+	f1.x /= f1.w; f1.y /= f1.w; f1.z /= f1.w;
+	f2.x /= f2.w; f2.y /= f2.w; f2.z /= f2.w;
+	f3.x /= f3.w; f3.y /= f3.w; f3.z /= f3.w;
+	f4.x /= f4.w; f4.y /= f4.w; f4.z /= f4.w;
+	f6.x /= f6.w; f6.y /= f6.w; f6.z /= f6.w;
+	f7.x /= f7.w; f7.y /= f7.w; f7.z /= f7.w;
+	f8.x /= f8.w; f8.y /= f8.w; f8.z /= f8.w;
 
-	DrawLine(f0, f1, glm::vec3(1, 1, 1));
-	DrawLine(f0, f4, glm::vec3(1, 1, 1));
-	DrawLine(f0, f3, glm::vec3(1, 1, 1));
 
-	DrawLine(f7, f1, glm::vec3(1, 1, 1));
-	DrawLine(f7, f4, glm::vec3(1, 1, 1));
-	DrawLine(f7, f6, glm::vec3(1, 1, 1));
+	DrawLine(f0, f1, glm::vec3(1, 0, 0));
+	DrawLine(f0, f4, glm::vec3(1, 0, 0));
+	DrawLine(f0, f3, glm::vec3(1, 0, 0));
 
-	DrawLine(f2, f3, glm::vec3(1, 1, 1));
-	DrawLine(f2, f1, glm::vec3(1, 1, 1));
-	DrawLine(f6, f2, glm::vec3(1, 1, 1));
+	DrawLine(f7, f1, glm::vec3(1, 0, 0));
+	DrawLine(f7, f4, glm::vec3(1, 0, 0));
+	DrawLine(f7, f6, glm::vec3(1, 0, 0));
 
-	DrawLine(f8, f4, glm::vec3(1, 1, 1));
-	DrawLine(f8, f3, glm::vec3(1, 1, 1));
-	DrawLine(f8, f6, glm::vec3(1, 1, 1));
+	DrawLine(f2, f3, glm::vec3(1, 0, 0));
+	DrawLine(f2, f1, glm::vec3(1, 0, 0));
+	DrawLine(f6, f2, glm::vec3(1, 0, 0));
+
+	DrawLine(f8, f4, glm::vec3(1, 0, 0));
+	DrawLine(f8, f3, glm::vec3(1, 0, 0));
+	DrawLine(f8, f6, glm::vec3(1, 0, 0));
 }
 
 void Renderer::drawCameras(Scene& scene)
@@ -391,21 +416,17 @@ void Renderer::drawCameras(Scene& scene)
 		cords[0].y = transformP1.y;
 		cords[0].z = transformP1.z;
 
-		cords[0].z = transformP1.w;
 
 		glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
 		cords[1].x = transformP2.x;
 		cords[1].y = transformP2.y;
 		cords[1].z = transformP2.z;
-		cords[1].z = transformP2.w;
 
 
 		glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
 		cords[2].x = transformP3.x;
 		cords[2].y = transformP3.y;
 		cords[2].z = transformP3.z;
-
-		cords[2].z = transformP3.w;
 
 		if (cords[0].x > cords[1].x)
 			DrawTriangle(cords[2], cords[1], cords[0], glm::fvec3(0));
