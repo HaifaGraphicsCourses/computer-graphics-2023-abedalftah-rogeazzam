@@ -11,8 +11,8 @@ public:
 	void Render( Scene& scene);
 	void SwapBuffers();
 	void ClearColorBuffer(const glm::vec3& color);
-	int GetViewportWidth() const;
-	int GetViewportHeight() const;
+	int GetViewportWidth();
+	int GetViewportHeight();
 	void updateViewport();
 	void setViewportWidth(int width);
 	void setViewportHeight(int height);

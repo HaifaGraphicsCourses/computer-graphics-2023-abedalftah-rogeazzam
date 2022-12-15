@@ -25,6 +25,7 @@ public:
 	std::vector<glm::fvec3> getVertices() const;
 	std::vector<Face> getFaces() const;
 	glm::mat4x4& GetWorldTransformations();
+	void updateDolly();
 
 	glm::vec3 localRotateVec = glm::fvec3(0, 0, 0);
 	float localDegreeToRotate = 0;
@@ -39,7 +40,7 @@ public:
 	bool drawWorldAxisFlag = false;
 
 	float perfar = 40.0f, pernear = 0.1f, fovy = glm::pi<float>() / 4, aspect = 2;
-	bool isItPers = true;
+	bool isItPers = false;
 	glm::vec3 up = glm::vec3(0, 1, 0);
 	glm::vec3 at = glm::vec3(0, 0, 0);
 	glm::vec3 eye = glm::vec3(0, 0, 1);

@@ -70,15 +70,18 @@ const glm::mat4x4& Camera::GetProjectionTransformation() const
 
 const glm::mat4x4& Camera::GetViewTransformation()
 {
+
 	glm::mat4x4 mat = glm::lookAt(eye, at, up);
 	glm::mat4x4 scaleDown = glm::mat4(1.0f);
-	scaleDown[0][0] = scaleDown[1][1] = 0.3;
+	scaleDown[0][0] = 0.2;
+	scaleDown[1][1] = 0.05;
 	scaleDown[2][2] = 0.001;
 	if (!isItPers) {
 		mat = adjustMat * ortho * mat * invMat;
 	}
 	else {
-		mat = adjustMat * pers * mat * invMat * scaleDown;
+		mat = glm::fmat4(adjustMat) * pers * mat * invMat * scaleDown;
+
 	}
 	return mat;
 }
@@ -166,4 +169,12 @@ glm::mat4x4& Camera::GetWorldTransformations()
 {
 	return worldMatrixT * worldMatrixRX * worldMatrixRY * worldMatrixRZ *
 		localMatrixT * localMatrixRX * localMatrixRY * localMatrixRZ;
+}
+
+void Camera::updateDolly()
+{
+	this->fovy = glm::pi<float>() / 4;
+	if (worldTransVec[2] + 1 != 0) {
+		fovy /= worldTransVec[2] + 1;
+	}
 }

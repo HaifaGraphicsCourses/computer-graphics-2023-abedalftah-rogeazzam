@@ -98,9 +98,12 @@ void Renderer::drawWorldAxies(Camera camera)
 	//we're not sure that we need to translate the world axies
 	glm::mat4x4 mat = camera.GetViewTransformation();
 	glm::fvec4 worldAxies = mat * glm::fvec4(0, 0, 0, 1);
-	glm::fvec4 worldX = mat * glm::fvec4(viewport_width + worldAxies[0], 0, 0, 1);
-	glm::fvec4 worldY = mat * glm::fvec4(0, viewport_height + worldAxies[1], 0, 1);
-	glm::fvec4 worldZ = mat * glm::fvec4(0, 0, viewport_width + worldAxies[0], 1);
+	glm::fvec4 worldX;
+	glm::fvec4 worldY;
+	worldX = mat * glm::fvec4(viewport_width + worldAxies[0], 0, 0, 1);
+	worldY = mat * glm::fvec4(0, viewport_height + worldAxies[1], 0, 1);
+
+	glm::fvec4 worldZ = mat * glm::fvec4(0, 0, viewport_height, 1);
 
 	worldAxies.x /= worldAxies.w;
 	worldAxies.y /= worldAxies.w;
@@ -271,8 +274,7 @@ void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const g
 
 void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 {
-	//A function to draw the model axies
-	//here we only move the bouding box by world transformations or camera transformations
+	//we need to check that if we do local transformations then the axies must move
 	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
@@ -282,9 +284,27 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	mat = mat1 * mat;
 
 	glm::fvec4 modelAxies = mat * glm::fvec4(0, 0, 0, 1);
-	glm::fvec4 localX = mat * glm::fvec4(80, 0, 0, 1);
-	glm::fvec4 localY = mat * glm::fvec4(0, 80, 0, 1);
-	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 80, 1);
+	glm::fvec4 localX = mat * glm::fvec4(140, 0, 0, 1);
+	glm::fvec4 localY = mat * glm::fvec4(0, 140, 0, 1);
+	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 140, 1);
+	modelAxies.x /= modelAxies.w;
+	modelAxies.y /= modelAxies.w;
+	modelAxies.z /= modelAxies.w;
+
+
+	localX.x /= localX.w;
+	localX.y /= localX.w;
+	localX.z /= localX.w;
+
+	localY.x /= localY.w;
+	localY.y /= localY.w;
+	localY.z /= localY.w;
+
+	localZ.x /= localZ.w;
+	localZ.y /= localZ.w;
+	localZ.z /= localZ.w;
+
+	cout << localZ.x << " " << localZ.y << " " << localZ.z << " " << localZ.w << endl;
 
 	DrawLine(modelAxies, localX, glm::fvec3(0, 0, 0));
 	DrawLine(modelAxies, localY, glm::fvec3(0, 1, 1));
@@ -320,17 +340,20 @@ void Renderer::DrawFlower()
 
 void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 {
-	//A function to draw the bouding box
-	//here we only move the bouding box by world transformations or camera transformations
-	glm::mat4x4 mat = meshModel.worldTransMat();
+	//we need to check that if we do local transformations then the bounding box must move
+	glm::mat4x4 mat = glm::mat4(1);
+	if(meshModel.localBoundingBox)
+		mat = meshModel.transformationMat();
+	if (meshModel.worldBoundingBox) {
+		meshModel.newVecCal();
+	}
+
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
 	if (scene.GetActiveCameraIndex() != -1)
 		mat1 = scene.GetActiveCamera().GetViewTransformation();
-
 	mat = mat1 * mat;
 	glm::fvec4 f0 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.max_z, 1);
-
 	glm::fvec4 f1 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.min_z, 1);
 
 	glm::fvec4 f4 = mat * glm::fvec4(meshModel.min_x, meshModel.max_y, meshModel.max_z, 1);
@@ -346,7 +369,40 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 
 	glm::fvec4 f3 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.max_z, 1);
 
-	//we connect every coordinate with the neighbors
+
+	f0.x /= f0.w;
+	f0.y /= f0.w;
+	f0.z /= f0.w;
+
+	f1.x /= f1.w;
+	f1.y /= f1.w;
+	f1.z /= f0.w;
+
+	f2.x /= f2.w;
+	f2.y /= f2.w;
+	f2.z /= f0.w;
+
+	f3.x /= f3.w;
+	f3.y /= f3.w;
+	f3.z /= f3.w;
+
+	f4.x /= f4.w;
+	f4.y /= f4.w;
+	f4.z /= f4.w;
+
+	f6.x /= f6.w;
+	f6.y /= f6.w;
+	f6.z /= f6.w;
+
+	f7.x /= f7.w;
+	f7.y /= f7.w;
+	f7.z /= f7.w;
+
+	f8.x /= f8.w;
+	f8.y /= f8.w;
+	f8.z /= f8.w;
+
+
 	DrawLine(f0, f1, glm::vec3(1, 1, 1));
 	DrawLine(f0, f4, glm::vec3(1, 1, 1));
 	DrawLine(f0, f3, glm::vec3(1, 1, 1));
@@ -366,7 +422,7 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 
 void Renderer::drawCameras(Scene& scene)
 {
-	//A function to draw the active cameras
+	//we need to draw it in the right way.. 
 	std::vector<Face> faces = scene.GetActiveCamera().getFaces();
 	std::vector<glm::fvec3> vertices = scene.GetActiveCamera().getVertices();
 	glm::mat4x4 mat = scene.GetActiveCamera().GetWorldTransformations();
@@ -382,21 +438,16 @@ void Renderer::drawCameras(Scene& scene)
 		cords[0].y = transformP1.y;
 		cords[0].z = transformP1.z;
 
-		cords[0].z = transformP1.w;
-
 		glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
 		cords[1].x = transformP2.x;
 		cords[1].y = transformP2.y;
 		cords[1].z = transformP2.z;
-		cords[1].z = transformP2.w;
-
 
 		glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
 		cords[2].x = transformP3.x;
 		cords[2].y = transformP3.y;
 		cords[2].z = transformP3.z;
 
-		cords[2].z = transformP3.w;
 
 		if (cords[0].x > cords[1].x)
 			DrawTriangle(cords[2], cords[1], cords[0], glm::fvec3(0));
@@ -405,6 +456,8 @@ void Renderer::drawCameras(Scene& scene)
 		else
 			DrawTriangle(cords[0], cords[2], cords[1], glm::fvec3(0));
 	}
+
+	//}
 }
 
 
@@ -422,15 +475,13 @@ void Renderer::Render(Scene& scene)
 	}
 
 	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
-
+	//we draw every active mesh model
 	for (int i = 0; i < meshModel.size(); i++) {
 		std::vector<Face> faces = meshModel[i].getFaces();
 		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
 
 		//we need to multiply by camera transformation
 		glm::mat4x4 mat1 = glm::mat4x4(1.0f);
-		// && scene.GetActiveModel(scene.getActiveModelToWork()).GetModelName() == meshModel[i].GetModelName()
-		//we need to find a solution that more than one camera can be and every camera can take a model and change only this model
 		if (scene.GetActiveCameraIndex() != -1)
 			mat1 = scene.GetActiveCamera().GetViewTransformation();
 
@@ -484,7 +535,7 @@ void Renderer::Render(Scene& scene)
 				DrawTriangle(cords[1], cords[0], cords[2], meshModel[i].getColor());
 			else
 				DrawTriangle(cords[0], cords[2], cords[1], meshModel[i].getColor());
-
+			//a feature that can be controlled by the user
 			if (meshModel[i].vertexNormals) {
 				glm::vec3 normal1 = meshModel[i].GetNormal(faces[j].GetNormalIndex(0) - 1);
 				glm::vec3 normal2 = meshModel[i].GetNormal(faces[j].GetNormalIndex(1) - 1);
@@ -497,6 +548,7 @@ void Renderer::Render(Scene& scene)
 				DrawLine(cords[1], distance1, meshModel[i].getColor());
 				DrawLine(cords[2], distance2, meshModel[i].getColor());
 			}
+			//a feature that can be controlled by the user
 			if (meshModel[i].faceNormals) {
 
 				glm::vec3 middleOfFace = (cords[1] + cords[0] + cords[2]);
@@ -506,8 +558,8 @@ void Renderer::Render(Scene& scene)
 				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), meshModel[i].getColor());
 			}
 		}
-
-		if (meshModel[i].boundBox) {
+		//a feature that can be controlled by the user
+		if (meshModel[i].localBoundingBox || meshModel[i].worldBoundingBox) {
 			drawBoudingBox(scene, meshModel[i]);
 		}
 		drawModelAxies(scene, meshModel[i]);
@@ -539,12 +591,12 @@ void Renderer::setViewportWidth(int width)
 	this->viewport_width = width;
 }
 
-int Renderer::GetViewportWidth() const
+int Renderer::GetViewportWidth()
 {
 	return viewport_width;
 }
 
-int Renderer::GetViewportHeight() const
+int Renderer::GetViewportHeight()
 {
 	return viewport_height;
 }
