@@ -88,6 +88,8 @@ Making approximatly same transformations in the world frame then in the local fr
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/world-local.gif)
 
+The reason for the differnces (for example seeing the difference between translating local than rotating world, and translating world and rotating local) is that when making world transformations the local axis (that starts in the middle of the mesh) moves along with the mesh, wheras the local transformations moves the mesh according to the local axis. 
+
 
 
 Requirement 6:
