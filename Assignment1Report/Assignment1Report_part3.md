@@ -13,7 +13,8 @@ Requirement 1:
 
 We removed the centering trick made in the previous assignment in the renderer class (changing each coordinate
  (x,y) to (x+half_width, y+half_height) ), and replaced it by translating the camera itself (multiplying by adjustMat in camera class) such that the mesh will appear at the middle of the viewport.
- Then, we opened the "cow.obj", the initialization looked like this:
+ 
+ We opened the "cow.obj", the initialization looked like this:
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/FirstReq1.png)
