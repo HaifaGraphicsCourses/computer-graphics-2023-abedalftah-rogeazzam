@@ -118,11 +118,11 @@ Requirement 7:
 
 Showing face normals after making transformations:
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SeventhReq1.jpeg)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SeventhReq1.png)
 
 Showing vertices normals after making transformations:
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SeventhReq2.jpeg)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SeventhReq2.png)
 
 
 Requirement 8:
