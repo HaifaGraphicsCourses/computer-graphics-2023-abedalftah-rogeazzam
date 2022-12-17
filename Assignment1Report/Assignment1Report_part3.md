@@ -59,6 +59,8 @@ Step 3:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/ThirdReq3.png)
 
+When we change the window size we implement new renderer and push the new viewports sizes to the buffer (implement in main RendererFrame function).
+
 
 Requirement 4:
 
@@ -104,6 +106,9 @@ Transforming (translating then rotating) the mesh both in the local and world fr
 Transforming (translating then rotating) the mesh both in the local and world frame, and showing the world Bounding Box:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/SixthReq2.png)
+
+
+The world bounding box will always keep the sides parellal to the X,Y,Z axis's, wheras the local bounding box will transform along with the mesh.
 
 
 
