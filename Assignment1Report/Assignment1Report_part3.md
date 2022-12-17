@@ -228,3 +228,5 @@ Requirement 14:
 
 By pressing the "Show World Axis" checkbox or "Bound Box" you can show or hide the world axis/bound box.
 
+The ability to change the model color.
+
