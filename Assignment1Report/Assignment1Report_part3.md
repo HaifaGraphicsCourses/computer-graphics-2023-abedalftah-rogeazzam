@@ -81,6 +81,8 @@ Translating in the world frame, then rotating in the model frame:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment1Report/FourthReq4.png)
 
+The implementation: we apply world transformations on the local axis (and camera inverse transformation)
+
 
 
 Requirement 5:
