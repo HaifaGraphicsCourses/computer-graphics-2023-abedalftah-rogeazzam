@@ -2,6 +2,8 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <math.h>
+#include <random>
 #include "Renderer.h"
 #include "InitShader.h"
 
@@ -19,6 +21,9 @@ Renderer::Renderer(int viewport_width, int viewport_height) :
 Renderer::~Renderer()
 {
 	delete[] color_buffer;
+	for (int i = 0; i < viewport_width; i++)
+		delete[] zBuffer[i];
+	delete[] zBuffer;
 }
 
 void Renderer::PutPixel(int i, int j, const glm::vec3& color)
@@ -74,9 +79,13 @@ void Renderer::DrawLine(const glm::ivec2& p1, const glm::ivec2& p2, const glm::v
 
 		if (e < 0) {
 			if (trueFalse) //tells us if we're in the second situation
+			{
+				//float z = depth(glm::vec3(p1, z1), glm::vec3(p2, z2), x1, y1);
 				PutPixel(x1, y1, color);
-			else
+			}
+			else {
 				PutPixel(y1, x1, color);
+			}
 			e += 2 * dy;
 		}
 		else {
@@ -128,6 +137,15 @@ void Renderer::CreateBuffers(int w, int h)
 	if (color_buffer)
 		delete[] color_buffer;
 	color_buffer = new float[3 * w * h];
+
+	zBuffer = new float* [viewport_width];
+	for (int i = 0; i < viewport_width; i++)
+		zBuffer[i] = new float[viewport_height];
+
+	for (int i = 0; i < viewport_width; i++)
+		for (int j = 0; j < viewport_height; j++)
+			zBuffer[i][j] = INFINITY;
+
 	ClearColorBuffer(glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
@@ -274,7 +292,6 @@ void Renderer::DrawCircle(int a, int r, int half_width, int half_height, const g
 
 void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 {
-	//we need to check that if we do local transformations then the axies must move
 	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
@@ -287,6 +304,7 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	glm::fvec4 localX = mat * glm::fvec4(140, 0, 0, 1);
 	glm::fvec4 localY = mat * glm::fvec4(0, 140, 0, 1);
 	glm::fvec4 localZ = mat * glm::fvec4(0, 0, 140, 1);
+
 	modelAxies.x /= modelAxies.w;
 	modelAxies.y /= modelAxies.w;
 	modelAxies.z /= modelAxies.w;
@@ -303,8 +321,6 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	localZ.x /= localZ.w;
 	localZ.y /= localZ.w;
 	localZ.z /= localZ.w;
-
-	cout << localZ.x << " " << localZ.y << " " << localZ.z << " " << localZ.w << endl;
 
 	DrawLine(modelAxies, localX, glm::fvec3(0, 0, 0));
 	DrawLine(modelAxies, localY, glm::fvec3(0, 1, 1));
@@ -338,21 +354,27 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
-void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
-{
-	//we need to check that if we do local transformations then the bounding box must move
-	glm::mat4x4 mat = glm::mat4(1);
-	if(meshModel.localBoundingBox)
-		mat = meshModel.transformationMat();
-	if (meshModel.worldBoundingBox) {
-		meshModel.newVecCal();
-	}
 
+void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
+{
+	//we neeed to divide by f.w
+	glm::mat4x4 mat = meshModel.worldTransMat();
 	glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 
-	if (scene.GetActiveCameraIndex() != -1)
+	if (scene.GetActiveCameraIndex() != -1) {
 		mat1 = scene.GetActiveCamera().GetViewTransformation();
+
+	}
+
+	if (isLocal) {
+		mat = meshModel.transformationMat();
+	}
+	else {
+		mat = glm::mat4x4(1.0f);
+		meshModel.calculateExtremes();
+	}
 	mat = mat1 * mat;
+
 	glm::fvec4 f0 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.max_z, 1);
 	glm::fvec4 f1 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.min_z, 1);
 
@@ -369,55 +391,31 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel)
 
 	glm::fvec4 f3 = mat * glm::fvec4(meshModel.max_x, meshModel.min_y, meshModel.max_z, 1);
 
-
-	f0.x /= f0.w;
-	f0.y /= f0.w;
-	f0.z /= f0.w;
-
-	f1.x /= f1.w;
-	f1.y /= f1.w;
-	f1.z /= f0.w;
-
-	f2.x /= f2.w;
-	f2.y /= f2.w;
-	f2.z /= f0.w;
-
-	f3.x /= f3.w;
-	f3.y /= f3.w;
-	f3.z /= f3.w;
-
-	f4.x /= f4.w;
-	f4.y /= f4.w;
-	f4.z /= f4.w;
-
-	f6.x /= f6.w;
-	f6.y /= f6.w;
-	f6.z /= f6.w;
-
-	f7.x /= f7.w;
-	f7.y /= f7.w;
-	f7.z /= f7.w;
-
-	f8.x /= f8.w;
-	f8.y /= f8.w;
-	f8.z /= f8.w;
+	f0.x /= f0.w; f0.y /= f0.w; f0.z /= f0.w;
+	f1.x /= f1.w; f1.y /= f1.w; f1.z /= f1.w;
+	f2.x /= f2.w; f2.y /= f2.w; f2.z /= f2.w;
+	f3.x /= f3.w; f3.y /= f3.w; f3.z /= f3.w;
+	f4.x /= f4.w; f4.y /= f4.w; f4.z /= f4.w;
+	f6.x /= f6.w; f6.y /= f6.w; f6.z /= f6.w;
+	f7.x /= f7.w; f7.y /= f7.w; f7.z /= f7.w;
+	f8.x /= f8.w; f8.y /= f8.w; f8.z /= f8.w;
 
 
-	DrawLine(f0, f1, glm::vec3(1, 1, 1));
-	DrawLine(f0, f4, glm::vec3(1, 1, 1));
-	DrawLine(f0, f3, glm::vec3(1, 1, 1));
+	DrawLine(f0, f1, glm::vec3(1, 0, 0));
+	DrawLine(f0, f4, glm::vec3(1, 0, 0));
+	DrawLine(f0, f3, glm::vec3(1, 0, 0));
 
-	DrawLine(f7, f1, glm::vec3(1, 1, 1));
-	DrawLine(f7, f4, glm::vec3(1, 1, 1));
-	DrawLine(f7, f6, glm::vec3(1, 1, 1));
+	DrawLine(f7, f1, glm::vec3(1, 0, 0));
+	DrawLine(f7, f4, glm::vec3(1, 0, 0));
+	DrawLine(f7, f6, glm::vec3(1, 0, 0));
 
-	DrawLine(f2, f3, glm::vec3(1, 1, 1));
-	DrawLine(f2, f1, glm::vec3(1, 1, 1));
-	DrawLine(f6, f2, glm::vec3(1, 1, 1));
+	DrawLine(f2, f3, glm::vec3(1, 0, 0));
+	DrawLine(f2, f1, glm::vec3(1, 0, 0));
+	DrawLine(f6, f2, glm::vec3(1, 0, 0));
 
-	DrawLine(f8, f4, glm::vec3(1, 1, 1));
-	DrawLine(f8, f3, glm::vec3(1, 1, 1));
-	DrawLine(f8, f6, glm::vec3(1, 1, 1));
+	DrawLine(f8, f4, glm::vec3(1, 0, 0));
+	DrawLine(f8, f3, glm::vec3(1, 0, 0));
+	DrawLine(f8, f6, glm::vec3(1, 0, 0));
 }
 
 void Renderer::drawCameras(Scene& scene)
@@ -438,16 +436,17 @@ void Renderer::drawCameras(Scene& scene)
 		cords[0].y = transformP1.y;
 		cords[0].z = transformP1.z;
 
+
 		glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
 		cords[1].x = transformP2.x;
 		cords[1].y = transformP2.y;
 		cords[1].z = transformP2.z;
 
+
 		glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
 		cords[2].x = transformP3.x;
 		cords[2].y = transformP3.y;
 		cords[2].z = transformP3.z;
-
 
 		if (cords[0].x > cords[1].x)
 			DrawTriangle(cords[2], cords[1], cords[0], glm::fvec3(0));
@@ -468,6 +467,15 @@ void Renderer::Render(Scene& scene)
 	int half_height = viewport_height / 2;
 	//DrawFlower();
 
+	for (int i = 0; i < viewport_width; i++){
+		for (int j = 0; j < viewport_height; j++) {
+			zBuffer[i][j] = INFINITY;
+			color_buffer[INDEX(viewport_width, i, j, 0)] = color_buffer[INDEX(viewport_width, i, j, 1)]
+				= color_buffer[INDEX(viewport_width, i, j, 2)] = 0.8f;
+
+		}
+	}
+
 	if (scene.GetActiveCameraIndex() != -1 && scene.GetActiveCamera().drawWorldAxisFlag)
 		drawWorldAxies(scene.GetActiveCamera());
 	if (scene.drawCameras) {
@@ -475,7 +483,9 @@ void Renderer::Render(Scene& scene)
 	}
 
 	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
-	//we draw every active mesh model
+
+	this->isZbuff = false;
+
 	for (int i = 0; i < meshModel.size(); i++) {
 		std::vector<Face> faces = meshModel[i].getFaces();
 		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
@@ -487,6 +497,7 @@ void Renderer::Render(Scene& scene)
 
 		glm::mat4x4 mat = meshModel[i].transformationMat();
 		mat = mat1 * mat;
+		meshModel[i].updateZPoints(mat);
 		for (int j = 0; j < faces.size(); j++) {
 			int v1 = faces[j].GetVertexIndex(0) - 1;
 			int v2 = faces[j].GetVertexIndex(1) - 1;
@@ -529,13 +540,27 @@ void Renderer::Render(Scene& scene)
 				cords[2].z = transformP3.z;
 			}
 
-			if (cords[0].x > cords[1].x)
-				DrawTriangle(cords[2], cords[1], cords[0], meshModel[i].getColor());
-			else if (cords[2].x > cords[0].x)
-				DrawTriangle(cords[1], cords[0], cords[2], meshModel[i].getColor());
-			else
-				DrawTriangle(cords[0], cords[2], cords[1], meshModel[i].getColor());
-			//a feature that can be controlled by the user
+			
+			glm::vec3 coll = meshModel[i].getColor();
+			if (meshModel[i].showRandom) {
+				float rand1 = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+				float rand2 = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+				float rand3 = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+				coll = glm::vec3(rand1, rand2, rand3);
+			}
+			if (meshModel[i].showZbuff) {
+				coll = glm::vec3(1, 1, 1);
+				this->isZbuff = true;
+				this->maxZ = meshModel[i].maxZpoint;
+				this->minZ = meshModel[i].minZpoint;
+			}
+			else if(meshModel[i].showColorbuff) {
+				this->maxZ = meshModel[i].maxZpoint;
+				this->minZ = meshModel[i].minZpoint;
+				coll = meshModel[i].getColor();
+			}
+			DrawTriangle(cords[0], cords[1], cords[2], coll, &meshModel[i]);
+
 			if (meshModel[i].vertexNormals) {
 				glm::vec3 normal1 = meshModel[i].GetNormal(faces[j].GetNormalIndex(0) - 1);
 				glm::vec3 normal2 = meshModel[i].GetNormal(faces[j].GetNormalIndex(1) - 1);
@@ -558,21 +583,176 @@ void Renderer::Render(Scene& scene)
 				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), meshModel[i].getColor());
 			}
 		}
-		//a feature that can be controlled by the user
-		if (meshModel[i].localBoundingBox || meshModel[i].worldBoundingBox) {
-			drawBoudingBox(scene, meshModel[i]);
+
+
+		if (meshModel[i].boundBox) {
+			drawBoudingBox(scene, meshModel[i], 1);
 		}
-		drawModelAxies(scene, meshModel[i]);
+		if (meshModel[i].boundBoxWorld) {
+			drawBoudingBox(scene, meshModel[i], 0);
+		}
+		if (meshModel[i].modelAxis) {
+			drawModelAxies(scene, meshModel[i]); //Drawing the model axis.
+		}
 
 	}
 
 }
 
-void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color)
+void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color, MeshModel* meshModel)
 {
-	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
-	DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
-	DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
+	float maxX = std::max(p1.x, p2.x), maxY = std::max(p1.y, p2.y), minX = std::min(p1.x, p2.x), minY = std::min(p1.y, p2.y);
+	maxX = std::max(maxX, p3.x); maxY = std::max(maxY, p3.y); minX = std::min(minX, p3.x); minY = std::min(minY, p3.y);
+	if (meshModel && meshModel->boundingRectangle) {
+		glm::vec3 boundingColor = glm::vec3(((p1.z + p2.z + p3.z)/3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1), 
+			((p1.z + p2.z + p3.z) / 3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1),
+			((p1.z + p2.z + p3.z) / 3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1));
+		DrawLine(glm::ivec2(minX, maxY), glm::ivec2(maxX, maxY), boundingColor);
+		DrawLine(glm::ivec2(minX, maxY), glm::ivec2(minX, minY), boundingColor);
+		DrawLine(glm::ivec2(minX, minY), glm::ivec2(maxX, minY), boundingColor);
+		DrawLine(glm::ivec2(maxX, minY), glm::ivec2(maxX, maxY), boundingColor);
+	}
+	if (meshModel && !meshModel->showRandom && !meshModel->showZbuff && !meshModel->showColorbuff) {
+		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
+		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
+		DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
+		if (!meshModel->showRaterized)
+			return;
+	}
+
+	if (!meshModel)
+		return;
+
+	glm::vec3 p1_temp = p1, p2_temp = p2, p3_temp = p3;
+
+	if (p1_temp.y > p2_temp.y)
+		std::swap(p1_temp, p2_temp);
+	if(p2_temp.y > p3_temp.y)
+		std::swap(p3_temp, p2_temp);
+	if (p1_temp.y > p2_temp.y)
+		std::swap(p1_temp, p2_temp);
+
+	if(p1_temp.y == p2_temp.y && p1_temp.x > p2_temp.x)
+		std::swap(p1_temp, p2_temp);
+	if(p2_temp.y == p3_temp.y && p2_temp.x > p3_temp.x)
+		std::swap(p3_temp, p2_temp);
+
+	if (p1_temp.x == p2_temp.x && p1_temp.x == p3_temp.x || p1_temp.y == p2_temp.y && p1_temp.y == p3_temp.y)
+		return;
+
+	float a1 = (p3_temp.x - p1_temp.x) / (float)(p3_temp.y - p1_temp.y), b1 = p3_temp.x - a1 * p3_temp.y;
+	int theX = (int)(a1 * p2_temp.y + b1);
+	if (theX > p2_temp.x)
+		raterizeTriangle(p1_temp, p2_temp, p3_temp, color, true, meshModel);
+	else
+		raterizeTriangle(p1_temp, p2_temp, p3_temp, color, false, meshModel);
+}
+
+//Edge Walking implementation
+void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 color, bool flag, MeshModel* meshModel)
+{
+	float a1 = 0, a2 = 0, currentX1, currentX2, z1 = 1, z2 = 1, z_val = 1;
+	if (p2.y != p1.y)
+		a1 = (float)(p2.x - p1.x) / (float)(p2.y - p1.y);
+	if (p3.y != p1.y)
+		a2 = (float)(p3.x - p1.x) / (float)(p3.y - p1.y);
+
+	currentX1 = currentX2 = p1.x;
+
+	// walk along the two sides of the triangle and fill the pixels
+	for (int scanlineY = (int)p1.y; scanlineY < (int)p2.y; scanlineY++) {
+
+		int startX = (int)currentX1;
+		int endX = (int)currentX2;
+		if (startX > endX)
+			std::swap(startX, endX);
+
+		for (int x = startX; x <= endX; x++) {
+			if (meshModel->showZbuff || meshModel->showColorbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, color, meshModel->showColorbuff);
+				continue;
+			}
+			PutPixel(x, (int)scanlineY, color);
+		}
+
+		currentX1 += a1;
+		currentX2 += a2;
+	}
+	if (currentX1 > currentX2)
+		std::swap(currentX1, currentX2);
+
+	if (flag) {
+		currentX1 = p2.x;
+		if (p2.y != p3.y)
+			a1 = (float)(p3.x - p2.x) / (float)(p3.y - p2.y);
+		if (p3.y != p1.y)
+			a2 = (float)(p3.x - p1.x) / (float)(p3.y - p1.y);
+	}
+	else {
+		currentX2 = p2.x;
+		if (p3.y != p1.y)
+			a1 = (float)(p3.x - p1.x) / (float)(p3.y - p1.y);
+		if (p2.y != p3.y)
+			a2 = (float)(p3.x - p2.x) / (float)(p3.y - p2.y);
+	}
+
+	for (int scanlineY = (int)p2.y; scanlineY < (int)p3.y; scanlineY++) {
+
+		int startX = (int)currentX1;
+		int endX = (int)currentX2;
+		if (startX > endX)
+			std::swap(startX, endX);
+
+		for (int x = startX; x <= endX; x++) {
+			if (meshModel->showZbuff || meshModel->showColorbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, color, meshModel->showColorbuff);
+				continue;
+			}
+			PutPixel(x, (int)scanlineY, color);
+		}
+
+		currentX1 += a1;
+		currentX2 += a2;
+	}
+}
+
+void Renderer::PutPixelCheck(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y, glm::vec3 color, bool showColorbuff) {
+	float z_val = 1;
+	z_val = findDepth(p1, p2, p3, x, y);
+	float d_min = std::abs(z_val - minZ), d_max = std::abs(z_val - maxZ);
+	float ratio;
+	if (d_max != 0)
+		ratio = d_min / d_max;
+	else
+		ratio = 1;
+	glm::vec3 pixCol = glm::vec3(((1.0 - ratio) / 1.5),
+		((1.0 - ratio) / 1.5), ((1.0 - ratio) / 1.5));
+
+	if (showColorbuff) {
+		pixCol = glm::vec3(color.x * pixCol.x, color.y * pixCol.y, color.z * pixCol.z);
+	}
+
+	int row = std::min(viewport_width - 1, std::max(x, 0)), col = std::min(viewport_height - 1, std::max(y, 0));
+
+	if (z_val <= zBuffer[row][col]) {
+		zBuffer[row][col] = z_val;
+		PutPixel(x, y, pixCol);
+	}
+}
+
+float Renderer::findDepth(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y) {
+	float A1 = std::abs((p3.x * p2.y + p2.x * y + x * p3.y)
+		- (p3.y * p2.x + p2.y * x + y * p3.x)) / 2;
+
+	float A2 = std::abs((p1.x * p3.y + p3.x * y + x * p1.y)
+		- (p1.y * p3.x + p3.y * x + y * p1.x)) / 2;
+
+	float A3 = std::abs((p1.x * p2.y + p2.x * y + x * p1.y)
+		- (p1.y * p2.x + p2.y * x + y * p1.x)) / 2;
+
+	float A = A1 + A2 + A3;
+	float z = p1.z * A1 / A + p2.z * A2 / A + p3.z * A3 / A;
+	return z;
 }
 
 void Renderer::updateViewport()

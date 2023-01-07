@@ -45,6 +45,7 @@ public:
 
 	bool faceNormals = false, vertexNormals = false, boundBox = false, boundBoxWorld = false, modelAxis = false;
 	bool showRandom = false, showZbuff = false, showColorbuff = false, showRaterized = false;
+
 private:
 
 	float x = 0;
