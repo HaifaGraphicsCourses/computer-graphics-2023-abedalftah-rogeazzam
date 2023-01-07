@@ -1,6 +1,7 @@
 #include "MeshModel.h"
 #include <iostream>
 #include <glm/ext/matrix_transform.hpp>
+#include <algorithm>
 
 MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, std::vector<glm::vec3> normals, std::vector<glm::vec2> texture, const std::string& model_name) :
 	faces(faces),
@@ -35,12 +36,12 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 	}
 
 
-	float maxX = 0, maxY = 0, minX = 0, minY = 0, maxZ = 0, minZ = 0, midX, midY, midZ;
+	double maxX = 0, maxY = 0, minX = 0, minY = 0, maxZ = 0, minZ = 0, midX, midY, midZ;
 	for (int i = 0; i < this->vertices.size(); i++) {
 
-		std::cout << "v " << this->vertices[i].x <<
+		/*std::cout << "v " << this->vertices[i].x <<
 			" " << this->vertices[i].y << " "
-			<< this->vertices[i].z << std::endl;
+			<< this->vertices[i].z << std::endl;*/
 
 		if (i == 0) {
 			minX = this->vertices[i].x;
@@ -96,11 +97,11 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 	mid_y = (max_y + min_y) / 2;
 	mid_z = (max_z + min_z) / 2;
 
-	for (int i = 0; i < faces.size(); i++) {
+	/*for (int i = 0; i < faces.size(); i++) {
 		std::cout << "f " << faces[i].GetVertexIndex(0) << "/" << "/" << faces[i].GetNormalIndex(0) << " ";
 		std::cout << faces[i].GetVertexIndex(1) << "/" << "/" << faces[i].GetNormalIndex(1) << " ";
 		std::cout << faces[i].GetVertexIndex(2) << "/" << "/" << faces[i].GetNormalIndex(2) << std::endl;
-	}
+	}*/
 
 }
 
@@ -133,29 +134,9 @@ std::vector<Face> MeshModel::getFaces()
 	return faces;
 }
 
-void MeshModel::newVecCal()
-{
-	for (int i = 0; i < vertices.size(); i++) {
-		glm::vec4 vec = transformationMat() * glm::vec4(this->vertices[i], 1);
-		if (vec.x > max_x || i == 0)
-			max_x = vec.x;
-		if (vec.y > max_y || i == 0)
-			max_y = vec.y;
-		if (vec.z > max_z || i == 0)
-			max_z = vec.z;
-
-		if (vec.x < min_x || i == 0)
-			min_x = vec.x;
-		if (vec.y < min_y || i == 0)
-			min_y = vec.y;
-		if (vec.z < min_z || i == 0)
-			min_z = vec.z;
-	}	
-}
-
 std::vector<glm::vec3> MeshModel::getVertices()
 {
-	return this->vertices;
+	return vertices;
 }
 
 glm::fvec3 MeshModel::getColor()
@@ -225,4 +206,65 @@ glm::mat4 MeshModel::transformationMat() const
 }
 glm::mat4 MeshModel::worldTransMat() {
 	return worldMatrixT * worldMatrixS * worldMatrixRX * worldMatrixRY * worldMatrixRZ;
+}
+
+void MeshModel:: calculateExtremes()
+{
+	for (int i = 0; i < vertices.size(); i++) {
+		glm::fvec4 vertex = this->transformationMat() * glm::fvec4(this->vertices[i], 1);
+		if (vertex.x > max_x || i == 0)
+			max_x = vertex.x;
+		if (vertex.y > max_y || i == 0)
+			max_y = vertex.y;
+		if (vertex.z > max_z || i == 0)
+			max_z = vertex.z;
+
+		if (vertex.x < min_x || i == 0)
+			min_x = vertex.x;
+		if (vertex.y < min_y || i == 0)
+			min_y = vertex.y;
+		if (vertex.z < min_z || i == 0)
+			min_z = vertex.z;
+	}
+}
+
+void MeshModel::updateZPoints(glm::fmat4 mat)
+{
+	for (int i = 0; i < faces.size(); i++) {
+		int v1 = faces[i].GetVertexIndex(0) - 1;
+		int v2 = faces[i].GetVertexIndex(1) - 1;
+		int v3 = faces[i].GetVertexIndex(2) - 1;
+
+		glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
+
+		glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+		if (transformP1.w != 0) {
+			cords[0].z = transformP1.z / transformP1.w;
+		}
+		else {
+			cords[0].z = transformP1.z;
+		}
+
+		glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
+		if (transformP2.w != 0) {
+			cords[1].z = transformP2.z / transformP2.w;
+		}
+		else {
+			cords[1].z = transformP2.z;
+		}
+		glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
+		if (transformP3.w != 0) {
+			cords[2].z = transformP3.z / transformP3.w;
+		}
+		else {
+			cords[2].z = transformP3.z;
+		}
+		maxZpoint = std::max(maxZpoint, cords[0].z);
+		maxZpoint = std::max(maxZpoint, cords[1].z);
+		maxZpoint = std::max(maxZpoint, cords[2].z);
+
+		minZpoint = std::min(minZpoint, cords[0].z);
+		minZpoint = std::min(minZpoint, cords[1].z);
+		minZpoint = std::min(minZpoint, cords[2].z);
+	}
 }
