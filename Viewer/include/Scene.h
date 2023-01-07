@@ -31,6 +31,7 @@ public:
 	MeshModel& GetActiveModel(int index);
 
 	bool drawCameras = false;
+
 private:
 	vector<shared_ptr<MeshModel>> mesh_models;
 	vector<shared_ptr<Camera>> cameras;

@@ -70,9 +70,11 @@ const glm::mat4x4& Camera::GetProjectionTransformation() const
 
 const glm::mat4x4& Camera::GetViewTransformation()
 {
+
 	glm::mat4x4 mat = glm::lookAt(eye, at, up);
 	glm::mat4x4 scaleDown = glm::mat4(1.0f);
-	scaleDown[0][0] = scaleDown[1][1] = 0.3;
+	scaleDown[0][0] = 0.2;
+	scaleDown[1][1] = 0.05;
 	scaleDown[2][2] = 0.001;
 	if (!isItPers) {
 		mat = adjustMat * ortho * mat * invMat;

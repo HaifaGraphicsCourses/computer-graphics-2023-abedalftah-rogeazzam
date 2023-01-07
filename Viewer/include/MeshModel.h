@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <string>
+#include <cmath>
 #include "Face.h"
 
 
@@ -23,8 +24,10 @@ public:
 
 	void updateWorldMatrix();
 	void updateLocalMatrix();
+	void updateZPoints(glm::fmat4);
 
 	bool localTrans = false;
+	bool boundingRectangle = false;
 
 	glm::vec3 localScaleVec = glm::fvec3(1, 1, 1);
 	glm::vec3 localRotateVec = glm::fvec3(0, 0, 0);
@@ -38,8 +41,11 @@ public:
 
 	float mid_x = 0, mid_y = 0, mid_z = 0;
 	float max_x = 0, max_y = 0, max_z = 0, min_x = 0, min_y = 0, min_z = 0;
+	float maxZpoint = -INFINITY, minZpoint = INFINITY;
 
-	bool faceNormals = false, vertexNormals = false, boundBox = false, boundBoxWorld = false;
+	bool faceNormals = false, vertexNormals = false, boundBox = false, boundBoxWorld = false, modelAxis = false;
+	bool showRandom = false, showZbuff = false, showColorbuff = false, showRaterized = false;
+
 private:
 
 	float x = 0;
@@ -62,5 +68,5 @@ private:
 	glm::fmat4x4 localMatrixRZ = glm::fmat4(1.0f);
 	glm::fmat4x4 localMatrixT = glm::fmat4(1.0f);
 
-	glm::fvec3 color = glm::fvec3(0.0f, 0.0f, 0.0f);
+	glm::fvec3 color = glm::fvec3(0.0f, 0.0f, 1.0f);
 };

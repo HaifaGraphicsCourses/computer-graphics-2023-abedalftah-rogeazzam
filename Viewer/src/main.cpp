@@ -33,10 +33,9 @@ static double mouseX = 640;
 static double mouseY = 360;
 static float fov = 45;
 glm::vec4 clear_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
-glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 1.0f, 1.00f);
 static int num = 0, number = 0, number1 = 0;
 static float dollyTrans = 0;
-
 /**
  * Function declarations
  */
@@ -459,6 +458,14 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				ImGui::Checkbox("World Bound Box", &model.boundBoxWorld);
 				ImGui::Checkbox("Face Normals", &model.faceNormals);
 				ImGui::Checkbox("Vertices Normals", &model.vertexNormals);
+				ImGui::Checkbox("Model Axis", &model.modelAxis);
+				ImGui::Checkbox("Triangles Bounding Rectangles", &model.boundingRectangle);
+				ImGui::Checkbox("Raterize Triangle", &model.showRaterized);
+				ImGui::Checkbox("Randomly Coloring", &model.showRandom);
+				ImGui::SameLine();
+				ImGui::Checkbox("Z Buffer", &model.showZbuff);
+				ImGui::SameLine();
+				ImGui::Checkbox("Color Buffer", &model.showColorbuff);
 				ImGui::End();
 			}
 			//if we update the object by local or world transformations I did not save the 
@@ -517,6 +524,7 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				if (i < 3)
 					model_color[i] = 0;
 			}
+			model_color[2] = 1.0f;
 			useMouse = false;
 			useKeyboard = false;
 			activeModel = false;

@@ -309,6 +309,7 @@ void Renderer::drawModelAxies(Scene& scene, MeshModel meshModel)
 	modelAxies.y /= modelAxies.w;
 	modelAxies.z /= modelAxies.w;
 
+
 	localX.x /= localX.w;
 	localX.y /= localX.w;
 	localX.z /= localX.w;
@@ -353,6 +354,7 @@ void Renderer::DrawFlower()
 	DrawCircle(21600, 200, half_width, half_height, glm::vec4(0.2f, 0.13f, 0.5f, 1.00f));
 }
 
+
 void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
 {
 	//we neeed to divide by f.w
@@ -361,6 +363,7 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
 
 	if (scene.GetActiveCameraIndex() != -1) {
 		mat1 = scene.GetActiveCamera().GetViewTransformation();
+
 	}
 
 	if (isLocal) {
@@ -373,7 +376,6 @@ void Renderer::drawBoudingBox(Scene& scene, MeshModel meshModel, bool isLocal)
 	mat = mat1 * mat;
 
 	glm::fvec4 f0 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.max_z, 1);
-
 	glm::fvec4 f1 = mat * glm::fvec4(meshModel.max_x, meshModel.max_y, meshModel.min_z, 1);
 
 	glm::fvec4 f4 = mat * glm::fvec4(meshModel.min_x, meshModel.max_y, meshModel.max_z, 1);
@@ -481,6 +483,7 @@ void Renderer::Render(Scene& scene)
 	}
 
 	vector<MeshModel> meshModel = scene.GetActiveModels(scene.GetActiveModelsIndexes());
+
 	this->isZbuff = false;
 
 	for (int i = 0; i < meshModel.size(); i++) {
@@ -536,6 +539,7 @@ void Renderer::Render(Scene& scene)
 				cords[2].y = transformP3.y;
 				cords[2].z = transformP3.z;
 			}
+
 			
 			glm::vec3 coll = meshModel[i].getColor();
 			if (meshModel[i].showRandom) {
@@ -569,6 +573,7 @@ void Renderer::Render(Scene& scene)
 				DrawLine(cords[1], distance1, meshModel[i].getColor());
 				DrawLine(cords[2], distance2, meshModel[i].getColor());
 			}
+			//a feature that can be controlled by the user
 			if (meshModel[i].faceNormals) {
 
 				glm::vec3 middleOfFace = (cords[1] + cords[0] + cords[2]);
@@ -578,6 +583,7 @@ void Renderer::Render(Scene& scene)
 				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), meshModel[i].getColor());
 			}
 		}
+
 
 		if (meshModel[i].boundBox) {
 			drawBoudingBox(scene, meshModel[i], 1);
@@ -765,12 +771,12 @@ void Renderer::setViewportWidth(int width)
 	this->viewport_width = width;
 }
 
-int Renderer::GetViewportWidth() const
+int Renderer::GetViewportWidth()
 {
 	return viewport_width;
 }
 
-int Renderer::GetViewportHeight() const
+int Renderer::GetViewportHeight()
 {
 	return viewport_height;
 }
