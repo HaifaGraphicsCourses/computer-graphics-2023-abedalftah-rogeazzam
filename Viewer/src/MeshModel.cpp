@@ -139,14 +139,32 @@ std::vector<glm::vec3> MeshModel::getVertices()
 	return vertices;
 }
 
-glm::fvec3 MeshModel::getColor()
+std::vector<glm::vec3> MeshModel::getNormals()
 {
-	return color;
+	return normals;
 }
 
-void MeshModel::setColor(glm::fvec3 color)
+glm::fvec3 MeshModel::getAmbient()
 {
-	this->color = color;
+	return ambient;
+}
+
+glm::fvec3 MeshModel::getSpecular()
+{
+	return specular;
+}
+
+glm::fvec3 MeshModel::getDiffuse()
+{
+	return diffuse;
+}
+
+
+void MeshModel::setColor(glm::fvec3 ambient, glm::fvec3 diffuse, glm::fvec3 specular)
+{
+	this->ambient = ambient;
+	this->diffuse = diffuse;
+	this->specular = specular;
 }
 
 void MeshModel::updateWorldMatrix()
@@ -204,11 +222,18 @@ glm::mat4 MeshModel::transformationMat() const
 	return worldMatrixT * worldMatrixS * worldMatrixRX * worldMatrixRY * worldMatrixRZ *
 		localMatrixT * localMatrixRX * localMatrixRY * localMatrixRZ * localMatrixS;
 }
+
+glm::mat4 MeshModel::NoTranslateMat() const
+{
+	return worldMatrixS * worldMatrixRX * worldMatrixRY * worldMatrixRZ *
+		localMatrixRX * localMatrixRY * localMatrixRZ * localMatrixS;
+}
+
 glm::mat4 MeshModel::worldTransMat() {
 	return worldMatrixT * worldMatrixS * worldMatrixRX * worldMatrixRY * worldMatrixRZ;
 }
 
-void MeshModel:: calculateExtremes()
+void MeshModel::calculateExtremes()
 {
 	for (int i = 0; i < vertices.size(); i++) {
 		glm::fvec4 vertex = this->transformationMat() * glm::fvec4(this->vertices[i], 1);
