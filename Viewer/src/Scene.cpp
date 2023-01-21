@@ -5,7 +5,8 @@
 
 Scene::Scene() :
 	active_camera_index(-1),
-	active_model_index(0)
+	active_model_index(0),
+	active_light_index(-1)
 {
 
 }
@@ -102,3 +103,70 @@ MeshModel& Scene::GetActiveModel(int index)
 {
 	return *mesh_models[index];
 }
+
+void Scene::addLight(shared_ptr<Light> l)
+{
+	lights.push_back(l);
+}
+
+Light& Scene::getActiveLight()
+{
+	return *lights.at(active_light_index);
+}
+
+Light& Scene::getLight(int index)
+{
+	return *lights.at(index);
+}
+
+void Scene::SetActiveLightIndex(int index)
+{
+	active_light_index = index;
+}
+
+int Scene::GetActiveLightIndex()
+{
+	return active_light_index;
+}
+
+int Scene::getLengthLights()
+{
+	return lights.size();
+}
+
+vector<Light> Scene::getAllLights()
+{
+	vector<Light> lights1;
+	for (int i = 0; i < lights.size(); i++)
+		lights1.push_back(*lights.at(i));
+	return lights1;
+}
+
+glm::fvec3 Scene::computeColor(MeshModel mesh, glm::fvec3 middleOfFace, glm::fvec3 normal)
+{
+	glm::fvec3 finalColor = mesh.getAmbient();
+	for (int i = 0; i < getLengthLights(); i++) {
+		Light l = getLight(i);
+		glm::fvec3 iA = mesh.getAmbient() * l.ambient;
+
+
+		glm::fvec3 lightVec = middleOfFace - l.pos;
+
+		float dotProduct = glm::dot(lightVec, normal);
+		float vector1Magnitude = glm::length(lightVec);
+		float vector2Magnitude = glm::length(normal);
+
+		float cosAngle = dotProduct / (vector1Magnitude * vector2Magnitude);
+		float angleRadians = acos(cosAngle);
+
+		float angleDegrees = glm::degrees(angleRadians);
+
+		glm::fvec3 iD = mesh.getDiffuse() * angleDegrees * l.diffuse;
+
+
+
+		finalColor += iA + iD;
+	}
+	return finalColor;
+}
+
