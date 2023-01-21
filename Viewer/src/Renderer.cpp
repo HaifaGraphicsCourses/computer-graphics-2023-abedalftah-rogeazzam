@@ -447,16 +447,7 @@ void Renderer::drawCameras(Scene& scene)
 		cords[2].x = transformP3.x;
 		cords[2].y = transformP3.y;
 		cords[2].z = transformP3.z;
-
-		if (cords[0].x > cords[1].x)
-			DrawTriangle(cords[2], cords[1], cords[0], glm::fvec3(0));
-		else if (cords[2].x > cords[0].x)
-			DrawTriangle(cords[1], cords[0], cords[2], glm::fvec3(0));
-		else
-			DrawTriangle(cords[0], cords[2], cords[1], glm::fvec3(0));
 	}
-
-	//}
 }
 
 
@@ -467,7 +458,7 @@ void Renderer::Render(Scene& scene)
 	int half_height = viewport_height / 2;
 	//DrawFlower();
 
-	for (int i = 0; i < viewport_width; i++){
+	for (int i = 0; i < viewport_width; i++) {
 		for (int j = 0; j < viewport_height; j++) {
 			zBuffer[i][j] = INFINITY;
 			color_buffer[INDEX(viewport_width, i, j, 0)] = color_buffer[INDEX(viewport_width, i, j, 1)]
@@ -489,13 +480,15 @@ void Renderer::Render(Scene& scene)
 	for (int i = 0; i < meshModel.size(); i++) {
 		std::vector<Face> faces = meshModel[i].getFaces();
 		std::vector<glm::vec3> vertices = meshModel[i].getVertices();
+		std::vector<glm::vec3> normal_vertices = meshModel[i].getNormals();
 
 		//we need to multiply by camera transformation
 		glm::mat4x4 mat1 = glm::mat4x4(1.0f);
 		if (scene.GetActiveCameraIndex() != -1)
 			mat1 = scene.GetActiveCamera().GetViewTransformation();
 
-		glm::mat4x4 mat = meshModel[i].transformationMat();
+		glm::mat4x4 mat = meshModel[i].transformationMat(), mattt = meshModel[i].NoTranslateMat();
+		mattt = glm::transpose(glm::inverse(mattt));
 		mat = mat1 * mat;
 		meshModel[i].updateZPoints(mat);
 		for (int j = 0; j < faces.size(); j++) {
@@ -503,9 +496,15 @@ void Renderer::Render(Scene& scene)
 			int v2 = faces[j].GetVertexIndex(1) - 1;
 			int v3 = faces[j].GetVertexIndex(2) - 1;
 
+			int normal_v1 = faces[j].GetNormalIndex(0) - 1;
+			int normal_v2 = faces[j].GetNormalIndex(1) - 1;
+			int normal_v3 = faces[j].GetNormalIndex(2) - 1;
+
 			glm::vec3 cords[] = { vertices.at(v1), vertices.at(v2), vertices.at(v3) };
+			glm::vec3 normal_cords[] = { normal_vertices.at(normal_v1), normal_vertices.at(normal_v2), normal_vertices.at(normal_v3) };
 
 			glm::vec4 transformP1 = mat * glm::vec4(cords[0], 1);
+			glm::vec4 normal_transformP1 = mattt * glm::vec4(normal_cords[0], 1);
 			if (transformP1.w != 0) {
 				cords[0].x = transformP1.x / transformP1.w;
 				cords[0].y = transformP1.y / transformP1.w;
@@ -517,7 +516,19 @@ void Renderer::Render(Scene& scene)
 				cords[0].z = transformP1.z;
 			}
 
+			if (normal_transformP1.w != 0) {
+				normal_cords[0].x = normal_transformP1.x / normal_transformP1.w;
+				normal_cords[0].y = normal_transformP1.y / normal_transformP1.w;
+				normal_cords[0].z = normal_transformP1.z / normal_transformP1.w;
+			}
+			else {
+				normal_cords[0].x = normal_transformP1.x;
+				normal_cords[0].y = normal_transformP1.y;
+				normal_cords[0].z = normal_transformP1.z;
+			}
+
 			glm::vec4 transformP2 = mat * glm::vec4(cords[1], 1);
+			glm::vec4 normal_transformP2 = mattt * glm::vec4(normal_cords[1], 1);
 			if (transformP2.w != 0) {
 				cords[1].x = transformP2.x / transformP2.w;
 				cords[1].y = transformP2.y / transformP2.w;
@@ -528,7 +539,20 @@ void Renderer::Render(Scene& scene)
 				cords[1].y = transformP2.y;
 				cords[1].z = transformP2.z;
 			}
+
+			if (normal_transformP2.w != 0) {
+				normal_cords[1].x = normal_transformP2.x / normal_transformP2.w;
+				normal_cords[1].y = normal_transformP2.y / normal_transformP2.w;
+				normal_cords[1].z = normal_transformP2.z / normal_transformP2.w;
+			}
+			else {
+				normal_cords[1].x = normal_transformP2.x;
+				normal_cords[1].y = normal_transformP2.y;
+				normal_cords[1].z = normal_transformP2.z;
+			}
+
 			glm::vec4 transformP3 = mat * glm::vec4(cords[2], 1);
+			glm::vec4 normal_transformP3 = mattt * glm::vec4(normal_cords[2], 1);
 			if (transformP3.w != 0) {
 				cords[2].x = transformP3.x / transformP3.w;
 				cords[2].y = transformP3.y / transformP3.w;
@@ -540,8 +564,49 @@ void Renderer::Render(Scene& scene)
 				cords[2].z = transformP3.z;
 			}
 
-			
-			glm::vec3 coll = meshModel[i].getColor();
+			if (normal_transformP3.w != 0) {
+				normal_cords[2].x = normal_transformP3.x / normal_transformP3.w;
+				normal_cords[2].y = normal_transformP3.y / normal_transformP3.w;
+				normal_cords[2].z = normal_transformP3.z / normal_transformP3.w;
+			}
+			else {
+				normal_cords[2].x = normal_transformP3.x;
+				normal_cords[2].y = normal_transformP3.y;
+				normal_cords[2].z = normal_transformP3.z;
+			}
+
+			if (scene.reflect_direction)
+				reflect_direction = true;
+
+			glm::vec3 coll;
+			if (scene.flatShade) {
+				this->maxZ = meshModel[i].maxZpoint;
+				this->minZ = meshModel[i].minZpoint;
+				meshModel[i].flat = true;
+				glm::vec3 middleOfFace = cords[0] + cords[1] + cords[2];
+				middleOfFace /= 3;
+				glm::vec3 normal = glm::normalize(glm::cross(cords[1] - cords[0], cords[2] - cords[0]));
+				coll = computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), middleOfFace, normal, scene.GetActiveCamera().eye);
+				DrawTriangle(cords[0], cords[1], cords[2], coll, glm::vec3(), glm::vec3(), &meshModel[i]);
+			}
+			else if (scene.gouraudShade) {
+				meshModel[i].gouraud = true;
+				this->maxZ = meshModel[i].maxZpoint;
+				this->minZ = meshModel[i].minZpoint;
+				glm::vec3 col1 = computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[0], normal_cords[0], scene.GetActiveCamera().eye);
+				glm::vec3 col2 = computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[1], normal_cords[1], scene.GetActiveCamera().eye);
+				glm::vec3 col3 = computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[2], normal_cords[2], scene.GetActiveCamera().eye);
+
+				DrawTriangle(cords[0], cords[1], cords[2], col1, col2, col3, &meshModel[i]);
+			}
+			else if (scene.phongShade) {
+				meshModel[i].phong = true;
+				this->ambient = meshModel[i].getAmbient(); this->diffuse = meshModel[i].getDiffuse();
+				this->specular = meshModel[i].getSpecular(); this->lights = scene.getAllLights(); this->cameraPos = scene.GetActiveCamera().eye;
+				this->normal1 = &normal_cords[0]; this->normal2 = &normal_cords[1]; this->normal3 = &normal_cords[2];
+
+				DrawTriangle(cords[0], cords[1], cords[2], glm::vec3(), glm::vec3(), glm::vec3(), &meshModel[i], scene);
+			}
 			if (meshModel[i].showRandom) {
 				float rand1 = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
 				float rand2 = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
@@ -554,13 +619,20 @@ void Renderer::Render(Scene& scene)
 				this->maxZ = meshModel[i].maxZpoint;
 				this->minZ = meshModel[i].minZpoint;
 			}
-			else if(meshModel[i].showColorbuff) {
+			else if (meshModel[i].showColorbuff) {
 				this->maxZ = meshModel[i].maxZpoint;
 				this->minZ = meshModel[i].minZpoint;
-				coll = meshModel[i].getColor();
+				coll = computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[0], glm::vec3(), scene.GetActiveCamera().eye);
 			}
-			DrawTriangle(cords[0], cords[1], cords[2], coll, &meshModel[i]);
 
+			if (!scene.flatShade && !scene.gouraudShade && !scene.phongShade) {
+				coll = meshModel[i].getAmbient();
+				DrawTriangle(cords[0], cords[1], cords[2], coll, glm::vec3(), glm::vec3(), &meshModel[i]);
+			}
+			meshModel[i].flat = meshModel[i].phong = meshModel[i].gouraud = false, reflect_direction = false;
+
+
+			//#############################################//
 			if (meshModel[i].vertexNormals) {
 				glm::vec3 normal1 = meshModel[i].GetNormal(faces[j].GetNormalIndex(0) - 1);
 				glm::vec3 normal2 = meshModel[i].GetNormal(faces[j].GetNormalIndex(1) - 1);
@@ -569,9 +641,9 @@ void Renderer::Render(Scene& scene)
 				glm::vec2 distance1 = glm::vec2(cords[1].x + (normal2.x * 40), cords[1].y + (normal2.y * 40));
 				glm::vec2 distance2 = glm::vec2(cords[2].x + (normal3.x * 40), cords[2].y + (normal3.y * 40));
 
-				DrawLine(cords[0], distance0, meshModel[i].getColor());
-				DrawLine(cords[1], distance1, meshModel[i].getColor());
-				DrawLine(cords[2], distance2, meshModel[i].getColor());
+				DrawLine(cords[0], distance0, computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[0], normal1, scene.GetActiveCamera().eye));
+				DrawLine(cords[1], distance1, computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[1], normal1, scene.GetActiveCamera().eye));
+				DrawLine(cords[2], distance2, computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[2], normal1, scene.GetActiveCamera().eye));
 			}
 			//a feature that can be controlled by the user
 			if (meshModel[i].faceNormals) {
@@ -580,7 +652,7 @@ void Renderer::Render(Scene& scene)
 				middleOfFace /= 3;
 				glm::vec3 faceNormal = glm::normalize(glm::cross(cords[1] - cords[0], cords[2] - cords[0]));
 				faceNormal *= 40;
-				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), meshModel[i].getColor());
+				DrawLine(middleOfFace, glm::vec2(cords[0].x + faceNormal.x, cords[0].y + faceNormal.y), computeColor(scene.getAllLights(), meshModel[i].getAmbient(), meshModel[i].getDiffuse(), meshModel[i].getSpecular(), cords[0], glm::vec3(), scene.GetActiveCamera().eye));
 			}
 		}
 
@@ -596,15 +668,19 @@ void Renderer::Render(Scene& scene)
 		}
 
 	}
+	if (scene.lightOn)
+	{
+		drawAllLights(scene);
+	}
 
 }
 
-void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& color, MeshModel* meshModel)
+void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, glm::vec3& c1, glm::vec3& c2, glm::vec3& c3, MeshModel* meshModel, Scene& scene)
 {
 	float maxX = std::max(p1.x, p2.x), maxY = std::max(p1.y, p2.y), minX = std::min(p1.x, p2.x), minY = std::min(p1.y, p2.y);
 	maxX = std::max(maxX, p3.x); maxY = std::max(maxY, p3.y); minX = std::min(minX, p3.x); minY = std::min(minY, p3.y);
 	if (meshModel && meshModel->boundingRectangle) {
-		glm::vec3 boundingColor = glm::vec3(((p1.z + p2.z + p3.z)/3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1), 
+		glm::vec3 boundingColor = glm::vec3(((p1.z + p2.z + p3.z) / 3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1),
 			((p1.z + p2.z + p3.z) / 3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1),
 			((p1.z + p2.z + p3.z) / 3 - meshModel->minZpoint) / (meshModel->maxZpoint - meshModel->minZpoint + 1));
 		DrawLine(glm::ivec2(minX, maxY), glm::ivec2(maxX, maxY), boundingColor);
@@ -612,10 +688,10 @@ void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm:
 		DrawLine(glm::ivec2(minX, minY), glm::ivec2(maxX, minY), boundingColor);
 		DrawLine(glm::ivec2(maxX, minY), glm::ivec2(maxX, maxY), boundingColor);
 	}
-	if (meshModel && !meshModel->showRandom && !meshModel->showZbuff && !meshModel->showColorbuff) {
-		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), color);
-		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), color);
-		DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), color);
+	if (meshModel && !meshModel->showRandom && !meshModel->showZbuff && !meshModel->showColorbuff && !meshModel->gouraud && !meshModel->flat && !meshModel->phong) {
+		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p2.x, p2.y), c1);
+		DrawLine(glm::ivec2(p1.x, p1.y), glm::ivec2(p3.x, p3.y), c1);
+		DrawLine(glm::ivec2(p3.x, p3.y), glm::ivec2(p2.x, p2.y), c1);
 		if (!meshModel->showRaterized)
 			return;
 	}
@@ -624,32 +700,55 @@ void Renderer::DrawTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm:
 		return;
 
 	glm::vec3 p1_temp = p1, p2_temp = p2, p3_temp = p3;
+	glm::vec3 c1_temp = c1, c2_temp = c2, c3_temp = c3;
 
-	if (p1_temp.y > p2_temp.y)
+	if (p1_temp.y > p2_temp.y) {
 		std::swap(p1_temp, p2_temp);
-	if(p2_temp.y > p3_temp.y)
+		std::swap(c1_temp, c2_temp);
+		std::swap(normal1, normal2);
+	}
+	if (p2_temp.y > p3_temp.y) {
 		std::swap(p3_temp, p2_temp);
-	if (p1_temp.y > p2_temp.y)
-		std::swap(p1_temp, p2_temp);
+		std::swap(c3_temp, c2_temp);
+		std::swap(normal3, normal2);
 
-	if(p1_temp.y == p2_temp.y && p1_temp.x > p2_temp.x)
+	}
+	if (p1_temp.y > p2_temp.y) {
 		std::swap(p1_temp, p2_temp);
-	if(p2_temp.y == p3_temp.y && p2_temp.x > p3_temp.x)
+		std::swap(c1_temp, c2_temp);
+		std::swap(normal1, normal2);
+
+	}
+
+	if (p1_temp.y == p2_temp.y && p1_temp.x > p2_temp.x) {
+		std::swap(p1_temp, p2_temp);
+		std::swap(c1_temp, c2_temp);
+		std::swap(normal1, normal2);
+
+	}
+	if (p2_temp.y == p3_temp.y && p2_temp.x > p3_temp.x) {
 		std::swap(p3_temp, p2_temp);
+		std::swap(c3_temp, c2_temp);
+		std::swap(normal3, normal2);
+	}
 
 	if (p1_temp.x == p2_temp.x && p1_temp.x == p3_temp.x || p1_temp.y == p2_temp.y && p1_temp.y == p3_temp.y)
 		return;
 
+	if (!meshModel->gouraud && !meshModel->phong)
+		c1_temp = c1;
+
 	float a1 = (p3_temp.x - p1_temp.x) / (float)(p3_temp.y - p1_temp.y), b1 = p3_temp.x - a1 * p3_temp.y;
 	int theX = (int)(a1 * p2_temp.y + b1);
+
 	if (theX > p2_temp.x)
-		raterizeTriangle(p1_temp, p2_temp, p3_temp, color, true, meshModel);
+		raterizeTriangle(p1_temp, p2_temp, p3_temp, c1_temp, c2_temp, c3_temp, true, meshModel);
 	else
-		raterizeTriangle(p1_temp, p2_temp, p3_temp, color, false, meshModel);
+		raterizeTriangle(p1_temp, p2_temp, p3_temp, c1_temp, c2_temp, c3_temp, false, meshModel);
 }
 
 //Edge Walking implementation
-void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 color, bool flag, MeshModel* meshModel)
+void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::fvec3& c1, glm::fvec3& c2, glm::fvec3& c3, bool flag, MeshModel* meshModel)
 {
 	float a1 = 0, a2 = 0, currentX1, currentX2, z1 = 1, z2 = 1, z_val = 1;
 	if (p2.y != p1.y)
@@ -668,11 +767,27 @@ void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::v
 			std::swap(startX, endX);
 
 		for (int x = startX; x <= endX; x++) {
-			if (meshModel->showZbuff || meshModel->showColorbuff) {
-				PutPixelCheck(p1, p2, p3, x, scanlineY, color, meshModel->showColorbuff);
+			if (meshModel->showZbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 0);
 				continue;
 			}
-			PutPixel(x, (int)scanlineY, color);
+			else if (meshModel->showColorbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 1);
+				continue;
+			}
+			else if (meshModel->flat) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 2);
+				continue;
+			}
+			else if (meshModel->phong) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 3);
+				continue;
+			}
+			else if (meshModel->gouraud) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, c2, c3, 4);
+				continue;
+			}
+			PutPixel(x, (int)scanlineY, c1);
 		}
 
 		currentX1 += a1;
@@ -704,11 +819,27 @@ void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::v
 			std::swap(startX, endX);
 
 		for (int x = startX; x <= endX; x++) {
-			if (meshModel->showZbuff || meshModel->showColorbuff) {
-				PutPixelCheck(p1, p2, p3, x, scanlineY, color, meshModel->showColorbuff);
+			if (meshModel->showZbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 0);
 				continue;
 			}
-			PutPixel(x, (int)scanlineY, color);
+			else if (meshModel->showColorbuff) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 1);
+				continue;
+			}
+			else if (meshModel->flat) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 2);
+				continue;
+			}
+			else if (meshModel->phong) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, glm::vec3(), glm::vec3(), 3);
+				continue;
+			}
+			else if (meshModel->gouraud) {
+				PutPixelCheck(p1, p2, p3, x, scanlineY, c1, c2, c3, 4);
+				continue;
+			}
+			PutPixel(x, (int)scanlineY, c1);
 		}
 
 		currentX1 += a1;
@@ -716,41 +847,66 @@ void Renderer::raterizeTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::v
 	}
 }
 
-void Renderer::PutPixelCheck(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y, glm::vec3 color, bool showColorbuff) {
-	float z_val = 1;
-	z_val = findDepth(p1, p2, p3, x, y);
+void Renderer::PutPixelCheck(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y, glm::vec3& c1, glm::vec3& c2, glm::vec3& c3, int type) {
+	float z_val = 1, A1 = 0, A2 = 0, A3 = 0, A = 1;
+	z_val = findDepth(p1, p2, p3, x, y, A, A1, A2, A3);
+
 	float d_min = std::abs(z_val - minZ), d_max = std::abs(z_val - maxZ);
 	float ratio;
 	if (d_max != 0)
 		ratio = d_min / d_max;
 	else
-		ratio = 1;
+		ratio = 1.0;
 	glm::vec3 pixCol = glm::vec3(((1.0 - ratio) / 1.5),
 		((1.0 - ratio) / 1.5), ((1.0 - ratio) / 1.5));
 
-	if (showColorbuff) {
-		pixCol = glm::vec3(color.x * pixCol.x, color.y * pixCol.y, color.z * pixCol.z);
+	if (type == 1) {
+		pixCol = glm::vec3(c1.x * pixCol.x, c1.y * pixCol.y, c1.z * pixCol.z);
+	}
+
+	// If it is flat shading (type == 2)
+	if (type == 2) {
+		pixCol = c1;
+	}
+
+	// If it is phong shading (type == 3)
+	if (type == 3) {
+		glm::vec3 n1 = *normal1, n2 = *normal2, n3 = *normal3;
+		glm::vec3 loc = n1 * A1 / A + n2 * A2 / A + n3 * A3 / A;
+		glm::vec3 p = glm::vec3(x, y, z_val);
+		loc = glm::normalize(loc);
+
+		pixCol = computeColor(lights, ambient, diffuse, specular,
+			p, loc, cameraPos);
+	}
+
+	// If it is gourod shading (type == 4)
+	if (type == 4) {
+		pixCol.x = A1 * c1.x / A + A2 * c2.x / A + A3 * c3.x / A;
+		pixCol.y = A1 * c1.y / A + A2 * c2.y / A + A3 * c3.y / A;
+		pixCol.z = A1 * c1.z / A + A2 * c2.z / A + A3 * c3.z / A;
 	}
 
 	int row = std::min(viewport_width - 1, std::max(x, 0)), col = std::min(viewport_height - 1, std::max(y, 0));
 
-	if (z_val <= zBuffer[row][col]) {
+	if (z_val < zBuffer[row][col]) {
 		zBuffer[row][col] = z_val;
 		PutPixel(x, y, pixCol);
 	}
 }
 
-float Renderer::findDepth(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y) {
-	float A1 = std::abs((p3.x * p2.y + p2.x * y + x * p3.y)
+float Renderer::findDepth(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int x, int y, float& A, float& A1,
+	float& A2, float& A3) {
+	A1 = std::abs((p3.x * p2.y + p2.x * y + x * p3.y)
 		- (p3.y * p2.x + p2.y * x + y * p3.x)) / 2;
 
-	float A2 = std::abs((p1.x * p3.y + p3.x * y + x * p1.y)
+	A2 = std::abs((p1.x * p3.y + p3.x * y + x * p1.y)
 		- (p1.y * p3.x + p3.y * x + y * p1.x)) / 2;
 
-	float A3 = std::abs((p1.x * p2.y + p2.x * y + x * p1.y)
+	A3 = std::abs((p1.x * p2.y + p2.x * y + x * p1.y)
 		- (p1.y * p2.x + p2.y * x + y * p1.x)) / 2;
 
-	float A = A1 + A2 + A3;
+	A = A1 + A2 + A3;
 	float z = p1.z * A1 / A + p2.z * A2 / A + p3.z * A3 / A;
 	return z;
 }
@@ -779,4 +935,70 @@ int Renderer::GetViewportWidth()
 int Renderer::GetViewportHeight()
 {
 	return viewport_height;
+}
+
+void Renderer::drawAllLights(Scene& s)
+{
+	for (int i = 0; i < s.getLengthLights(); i++)
+	{
+		Light l = s.getLight(i);
+		for (int i = l.pos[0] - 20; i < l.pos[0] + 20; i++)
+		{
+			for (int j = l.pos[1] - 20; j < l.pos[1] + 20; j++)
+			{
+				PutPixel(i, j, glm::vec3(1, 0.38, 0.13));
+			}
+		}
+
+	}
+}
+
+glm::fvec3 Renderer::computeColor(vector<Light> lights, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, glm::vec3 middleOfFace, glm::vec3 normal, glm::vec3 cameraPos)
+{
+	float sizing = 2;
+
+	// Computing each reflect type as we saw in the lectures.
+	glm::vec3 finalColor = glm::vec3(0.0f);
+	for (int i = 0; i < lights.size(); i++)
+	{
+		Light light = lights.at(i);
+
+		// Compute the ambience
+		glm::vec3 iA = light.ambient * ambient;
+		
+		// Compute the diffuse
+		glm::vec3 light_temp;
+		glm::vec3 temp = light.pos;
+
+		light_temp = light.pos - middleOfFace;
+
+		light_temp = glm::normalize(light_temp);
+		glm::vec3 normal_temp = normal;
+		float degree = fmax(glm::dot(light_temp, normal_temp), 0.0);
+		glm::vec3 iD = diffuse * degree * light.diffuse;
+
+		// Compute the specular.
+		glm::vec3 r = sizing * (normal_temp * degree) - light_temp;
+		glm::vec3 v = cameraPos - middleOfFace;
+		v = glm::normalize(v);
+		float rv = fmax(pow(glm::dot(r, v), 1), 0.0);
+		glm::vec3 iS = specular * rv * light.specular;
+
+		// Finally summing the results of each light.
+		finalColor += iA + iD + iS;
+
+		if (reflect_direction)
+			showReflection(r, middleOfFace, light.pos);
+	}
+	return finalColor;
+}
+
+void Renderer::showReflection(glm::vec3 r, glm::vec3 middleOfFace, glm::vec3 pos)
+{
+	glm::vec3 drawL = glm::normalize(r);
+	drawL *= 60;
+	DrawLine(middleOfFace, middleOfFace + drawL, glm::vec3(1, 0.38, 0.13));
+	drawL = glm::normalize(pos - middleOfFace);
+	drawL *= 60;
+	DrawLine(middleOfFace, middleOfFace + drawL, glm::vec3(0, 0, 1));
 }
