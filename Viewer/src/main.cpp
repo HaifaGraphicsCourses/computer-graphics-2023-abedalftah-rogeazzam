@@ -33,8 +33,12 @@ static double mouseX = 640;
 static double mouseY = 360;
 static float fov = 45;
 glm::vec4 clear_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
-glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 1.0f, 1.00f);
+glm::vec4 ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+glm::vec4 diffuse = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+glm::vec4 specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
 static int num = 0, number = 0, number1 = 0;
+static int lightNum = 0, lightNumber = 0, lightNumber1 = 0;
+static bool lPos = false, lColor = false;
 static float dollyTrans = 0;
 /**
  * Function declarations
@@ -368,7 +372,9 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 
 	// Controls
 	ImGui::ColorEdit3("Clear Color", (float*)&clear_color);
-	ImGui::ColorEdit3("model Color", (float*)&model_color);
+	ImGui::ColorEdit3("ambient", (float*)&ambient);
+	ImGui::ColorEdit3("diffuse", (float*)&diffuse);
+	ImGui::ColorEdit3("specular", (float*)&specular);
 	// TODO: Add more controls as needed
 
 	ImGui::End();
@@ -406,7 +412,52 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		ImGui::Checkbox("Another Window", &show_another_window);
 		ImGui::Checkbox("Object Control Window", &transWindow);
 		ImGui::Checkbox("Camera Control Window", &cameraWindow);
+		ImGui::Checkbox("Light Control Window", &scene.lightOn);
 		ImGui::Checkbox("Draw World Axis", &scene.GetActiveCamera().drawWorldAxisFlag);
+
+		if (scene.lightOn) {
+			ImGui::Begin("Light Control Window");
+			if (ImGui::Checkbox("Flat Shade", &scene.flatShade)) {
+				scene.gouraudShade = scene.phongShade = false;
+			}
+			if (ImGui::Checkbox("Gouraud Shade", &scene.gouraudShade)) {
+				scene.flatShade = scene.phongShade = false;
+			}
+			if (ImGui::Checkbox("PhongShade", &scene.phongShade)) {
+				scene.gouraudShade = scene.flatShade = false;
+			}
+			if (ImGui::Button("Add Light")) {
+				Light l = Light();
+				scene.addLight(make_shared<Light>(l));
+			}
+			ImGui::InputInt("Light Index", &lightNum, lightNumber, lightNumber1, false);
+			if (lightNum >= 0 && lightNum < scene.getLengthLights())
+				scene.SetActiveLightIndex(lightNum);
+			else {
+				ImGui::Begin("Error Light Index");
+				ImGui::Text("Please enter a valid light Index from 0 to %d", scene.getLengthLights() - 1);
+				ImGui::End();
+			}
+			ImGui::Checkbox("Light position", &lPos);
+			ImGui::Checkbox("Color position", &lColor);
+			if (lColor && scene.getLengthLights() >= 1) {
+				ImGui::ColorEdit3("ambient", (float*)&scene.getActiveLight().ambient);
+				ImGui::ColorEdit3("diffuse", (float*)&scene.getActiveLight().diffuse);
+				ImGui::ColorEdit3("specular", (float*)&scene.getActiveLight().specular);
+			}
+			if (lPos && scene.getLengthLights() >= 1) {
+				ImGui::SliderFloat("position x", &scene.getActiveLight().pos[0], 0, 1280);
+				ImGui::SliderFloat("position y", &scene.getActiveLight().pos[1], 0, 720);
+				ImGui::SliderFloat("position z", &scene.getActiveLight().pos[2], 0, 2000);
+			}
+			else if (lPos && scene.getLengthLights() < 1) {
+				ImGui::Begin("Error Light Index");
+				ImGui::Text("Please enter a valid light Index from 0 to %d", scene.getLengthLights() - 1);
+				ImGui::End();
+			}
+			ImGui::Checkbox("Direction Of Light Reflection", &scene.reflect_direction);
+			ImGui::End();
+		}
 
 		//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
@@ -425,7 +476,9 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::Checkbox("Turn on/off the model", &activeModel);
 			ImGui::Checkbox("Move Obj by Mouse", &useMouse);
 			ImGui::Checkbox("Move Obj by keyBoard", &useKeyboard);
-			ImGui::ColorEdit3("model color", (float*)&model_color); // Edit 3 floats representing a color
+			ImGui::ColorEdit3("ambient", (float*)&ambient);
+			ImGui::ColorEdit3("diffuse", (float*)&diffuse);
+			ImGui::ColorEdit3("specular", (float*)&specular);
 			ImGui::Checkbox("Local Transformations", &localTrans);
 			ImGui::SameLine();
 			ImGui::Checkbox("World Transformations", &worldTrans);
@@ -442,7 +495,9 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 
 			for (int i = 0; i < scene.GetModelCount(); i++) {
 				if (scene.GetModel(i).GetModelName() == modelName && activeModel) {
-					scene.GetModel(i).setColor(glm::vec3(model_color[0], model_color[1], model_color[2]));
+					scene.GetModel(i).setColor(ambient,
+						diffuse,
+						specular);
 					scene.SetActiveModelIndex(i);
 					modelIndex = i;
 				}
@@ -521,10 +576,13 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		else {
 			for (int i = 0; i < 100; i++) {
 				modelName[i] = '\0';
-				if (i < 3)
-					model_color[i] = 0;
+				if (i < 3) {
+					ambient[i] = 0;
+					diffuse[i] = 0;
+					specular[i] = 0;
+				}
 			}
-			model_color[2] = 1.0f;
+			ambient[2] = 1.0f;
 			useMouse = false;
 			useKeyboard = false;
 			activeModel = false;

@@ -4,7 +4,6 @@
 #include <cmath>
 #include "Face.h"
 
-
 class MeshModel
 {
 public:
@@ -15,11 +14,15 @@ public:
 	int GetFacesCount() const;
 	const std::string& GetModelName() const;
 	glm::mat4 MeshModel::transformationMat() const;
+	glm::mat4 NoTranslateMat() const;
 	glm::mat4 worldTransMat();
 	std::vector<Face> getFaces();
 	std::vector<glm::vec3> getVertices();
-	glm::fvec3 MeshModel::getColor();
-	void MeshModel::setColor(glm::fvec3 color);
+	std::vector<glm::vec3> getNormals();
+	glm::fvec3 getAmbient();
+	glm::fvec3 getSpecular();
+	glm::fvec3 getDiffuse();
+	void setColor(glm::fvec3 ambient, glm::fvec3 diffuse, glm::fvec3 specular);
 	void calculateExtremes();
 
 	void updateWorldMatrix();
@@ -45,6 +48,9 @@ public:
 
 	bool faceNormals = false, vertexNormals = false, boundBox = false, boundBoxWorld = false, modelAxis = false;
 	bool showRandom = false, showZbuff = false, showColorbuff = false, showRaterized = false;
+	bool gouraud = false;
+	bool flat = false;
+	bool phong = false;
 
 private:
 
@@ -68,5 +74,8 @@ private:
 	glm::fmat4x4 localMatrixRZ = glm::fmat4(1.0f);
 	glm::fmat4x4 localMatrixT = glm::fmat4(1.0f);
 
-	glm::fvec3 color = glm::fvec3(0.0f, 0.0f, 1.0f);
+	glm::fvec3 ambient = glm::fvec3(0.0f, 0.0f, 1.0f);
+	glm::fvec3 diffuse = glm::fvec3(0.0f, 0.0f, 1.0f);
+	glm::fvec3 specular = glm::fvec3(0.0f, 0.0f, 1.0f);
+
 };
