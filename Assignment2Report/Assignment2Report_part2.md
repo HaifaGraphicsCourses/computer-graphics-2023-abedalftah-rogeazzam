@@ -13,19 +13,19 @@ Student Number: 207177098
 
 As required, you can add several lights and choose the light you would like to control by writing the index, and control the position and the RGB components, similarly you can specify the material of each model.
 
-First we loaded a bunny model with the following ambient:
+First we loaded a Cow model with the following ambient:
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q1_1.png)
 
-As we can see, by changing the ambient of the light the brightness of the color changes, as expected since the ambient is responsible of the brightness and color:
+As we can see, by changing the ambient of the light the brightness of the color changes, as expected since the ambient can change the color and the atmosphere, and creates a general and uniform lighting:
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q1_2.png)
 
 
 
-In addition changing the light position won't change the coloring of the faces, since for each face we compute: Ia = La * Ka, which has nothing to do with the position of the light,
+In addition changing the light position won't change the coloring of the faces, since for each face we compute: Ia = La * Ka (Light ambient * Model ambient), which has nothing to do with the position of the light,
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q1_3.png)
@@ -63,7 +63,7 @@ Changing the position of the light:
 ## Requirement 4:
 
 
-We computed the direction of the light to the center of the face and it appears as the blue lines, and the reflection from the faces appears as orange lines:
+We computed the direction of the light to the center of the face and it appears as the blue lines, and the reflection from the faces appears as orange lines, using the formula  r = 2*normal*cos(teta) - I ,  where teta is the angle between the normal and I (which is the vector between the point on the model and the light position):
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q4_1.png)
@@ -79,7 +79,7 @@ After moving the light, you can see the directions has changed:
 ## Requirement 5:
 
 
-The phong shading is the smoothest among all, since for each pixel we compute the color by finding it's own normal (by interpolation of the triangle vertices normals), and then find the color:
+The phong shading is the smoothest among all, since for each pixel we compute the color by finding it's own normal (by interpolation of the triangle vertices normals), and then find the color, In addition we computed the specular light using the formula:  model specular * cos(alpha) * light specular , where alpha is the angle between r (calculated previously) to the vector v (which is the vector between the camera position and the point on the model).
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q5_1.png)
