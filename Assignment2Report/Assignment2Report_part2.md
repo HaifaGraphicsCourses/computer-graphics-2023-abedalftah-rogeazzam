@@ -18,7 +18,7 @@ First we loaded a Cow model with the following ambient:
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q1_1.png)
 
-As we can see, by changing the ambient of the light the brightness of the color changes, as expected since the ambient can change the color and the atmosphere, and creates a general and uniform lighting:
+As we can see, by changing the ambient of the light the color and the atmosphere changes, as expected since the ambient can change the color and the atmosphere, and creates a general and uniform lighting:
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q1_2.png)
