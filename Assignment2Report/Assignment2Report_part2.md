@@ -63,7 +63,7 @@ Changing the position of the light:
 ## Requirement 4:
 
 
-We computed the direction of the light to the center of the face and it appears as the blue lines, and the reflection from the faces appears as orange lines, using the formula  r = 2*normal*cos(teta) - I ,  where teta is the angle between the normal and I (which is the vector between the point on the model and the light position):
+We computed the direction of the light to the center of the face and it appears as the blue lines, and the reflection from the faces appears as orange lines, using the formula  r = 2 * normal * cos(teta) - I ,  where teta is the angle between the normal and I (I is the vector between the point on the model and the light position):
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q4_1.png)
@@ -79,7 +79,7 @@ After moving the light, you can see the directions has changed:
 ## Requirement 5:
 
 
-The phong shading is the smoothest among all, since for each pixel we compute the color by finding it's own normal (by interpolation of the triangle vertices normals), and then find the color, In addition we computed the specular light using the formula:  model specular * cos(alpha) * light specular , where alpha is the angle between r (calculated previously) to the vector v (which is the vector between the camera position and the point on the model).
+The phong shading is the smoothest among all, since for each pixel we compute the color by finding it's own normal (by interpolation of the triangle vertices normals), and then find the color, In addition we computed the specular light using the formula:  model specular * cos(alpha) * light specular , where alpha is the angle between r (calculated previously) to the vector v (v is the vector between the camera position and the point on the model).
 
 
 ![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment2Report/Q5_1.png)
