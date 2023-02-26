@@ -451,6 +451,7 @@ void DrawImguiMenus()
 		ImGui::ColorEdit3("Clear Color", (float*)&clear_color);
 
 
+
 		if (scene->lightOn) {
 			ImGui::Begin("Light Control Window");
 			if (ImGui::Button("Add Light")) {
@@ -599,6 +600,7 @@ void DrawImguiMenus()
 						diffuse,
 						specular);
 					scene->SetActiveModelIndex(i);
+
 					modelIndex = i;
 				}
 				else if (scene->GetModel(i).GetModelName() == modelName && !activeModel) {
