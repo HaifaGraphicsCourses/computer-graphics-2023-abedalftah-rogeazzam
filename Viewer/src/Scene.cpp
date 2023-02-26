@@ -106,6 +106,7 @@ MeshModel& Scene::GetActiveModel(int index)
 
 void Scene::addLight(shared_ptr<Light> l)
 {
+	active_light_index++;
 	lights.push_back(l);
 }
 

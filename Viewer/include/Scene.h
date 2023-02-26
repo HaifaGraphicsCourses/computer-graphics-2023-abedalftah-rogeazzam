@@ -46,6 +46,9 @@ public:
 	bool phongShade = false;
 	bool reflect_direction = false;
 
+	int type = 0, mapping = 0;
+	int transitionsNum = 4;
+
 private:
 	vector<shared_ptr<MeshModel>> mesh_models;
 	vector<shared_ptr<Camera>> cameras;
