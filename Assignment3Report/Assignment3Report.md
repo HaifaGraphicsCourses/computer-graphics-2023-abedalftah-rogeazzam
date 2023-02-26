@@ -28,7 +28,30 @@ Student Number: 207177098
 ## Requirement 2:
 
 We made two new buffers VBO and VAO and a struct Vertex so every vertex have a position, normal, texture.
-we do the same as Requirement 1 except 8, 9 we do in the renderer.
+we do the same as Requirement 1 (except 8, 9 we do in the renderer) :
+
+
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, modelVertices.size() * sizeof(Vertex), &modelVertices[0], GL_STATIC_DRAW);
+
+	// Vertex Positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+
+	// Normals attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+
+	// Vertex Texture Coords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+
+	// unbind to make sure other code does not change it somewhere else
+	glBindVertexArray(0);
 
 
 ## Requirement 3:
@@ -131,7 +154,7 @@ Here we apply the transformations previously made in the Render to the vertices/
 Here is a picture that every thing is working:
 
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment3Report/Requirement5.jpeg)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment3Report/Requirement5.png)
 
 
 
