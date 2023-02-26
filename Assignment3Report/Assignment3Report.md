@@ -29,40 +29,6 @@ Student Number: 207177098
 
 We made two new buffers VBO and VAO and a struct Vertex so every vertex have a position, normal, texture.
 we do the same as Requirement 1 except 8, 9 we do in the renderer.
-Requirement 3:
-
-    #version 330 core
-
-    layout(location = 0) in vec3 pos;
-    layout(location = 1) in vec3 normal;
-    layout(location = 2) in vec2 texCoords;
-
-    // The model transformations(world, local)/view(lookat)/projection matrices(orthogonal, perspective)
-    uniform mat4 model;
-    uniform mat4 view;
-    uniform mat4 projection;
-
-    // These outputs will be available in the fragment shader as inputs
-    out vec3 orig_fragPos;
-    out vec3 fragPos;
-    out vec3 fragNormal;
-    out vec2 fragTexCoords;
-    
-    void main()
-    {
-	   // Apply the model transformation to the 'position' and 'normal' properties of the vertex,
-	   // so the interpolated values of these properties will be available for usi n the fragment shader
-	   orig_fragPos = vec3(vec4(pos, 1.0f));
-	   fragPos = vec3(model * vec4(pos, 1.0f));
-	   fragNormal = mat3(model) * normal;
-       
-	   // Pass the vertex texture coordinates property as it is. Its interpolated value
-	   // will be avilable for us in the fragment shader
-	   fragTexCoords = texCoords;
-       
-	   // This is an internal OpenGL variable, we must set a value to this variable
-	   gl_Position = projection * view *  model * vec4(pos, 1.0f);
-       }
 
 
 ## Requirement 3:
@@ -165,7 +131,7 @@ Here we apply the transformations previously made in the Render to the vertices/
 Here is a picture that every thing is working:
 
 
-![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment3Report/Requirement5.jpg)
+![alt text](https://github.com/HaifaGraphicsCourses/computer-graphics-2023-abedalftah-rogeazzam/blob/master/Assignment3Report/Requirement5.jpeg)
 
 
 
