@@ -3,6 +3,13 @@
 #include <string>
 #include <cmath>
 #include "Face.h"
+#include <glad/glad.h>
+struct Vertex
+{
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 textureCoords;
+};
 
 class MeshModel
 {
@@ -51,7 +58,10 @@ public:
 	bool gouraud = false;
 	bool flat = false;
 	bool phong = false;
-
+	std::vector<Vertex> modelVertices;
+	GLuint vbo;
+	GLuint vao;
+	glm::vec3 mid;
 private:
 
 	float x = 0;
@@ -59,7 +69,7 @@ private:
 	std::vector<Face> faces;
 	std::vector<glm::fvec3> vertices;
 	std::vector<glm::fvec3> normals;
-	std::vector<glm::fvec2> texture;
+	std::vector<glm::vec2> textureCoords;
 	std::string model_name;
 
 	glm::fmat4x4 worldMatrixS = glm::fmat4(1.0f);
@@ -78,4 +88,5 @@ private:
 	glm::fvec3 diffuse = glm::fvec3(0.0f, 0.0f, 1.0f);
 	glm::fvec3 specular = glm::fvec3(0.0f, 0.0f, 1.0f);
 
+	std::vector<glm::vec3> MeshModel::CalculateNormals(std::vector<glm::vec3> vertices, std::vector<Face> faces);
 };

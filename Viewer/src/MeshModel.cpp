@@ -7,12 +7,9 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 	faces(faces),
 	vertices(vertices),
 	normals(normals),
-	texture(texture),
+	textureCoords(texture),
 	model_name(model_name)
 {
-	glm::mat3 s(1);
-	s[2][2] = 1;
-
 	for (int i = 0; i < vertices.size(); i++) {
 		if (this->vertices[i].x > max_x || i == 0)
 			max_x = this->vertices[i].x;
@@ -28,85 +25,70 @@ MeshModel::MeshModel(std::vector<Face> faces, std::vector<glm::vec3> vertices, s
 		if (this->vertices[i].z < min_z || i == 0)
 			min_z = this->vertices[i].z;
 	}
+	mid.x = (max_x + min_x) / 2;
+	mid.y = (max_y + min_y) / 2;
+	mid.z = (max_z + min_z) / 2;
 
-	s[0][0] = s[1][1] = s[2][2] = (320 / max_x > 180 / max_y ? 180 / max_y : 320 / max_x);
+	bool computedNormal = false;
 
-	for (int i = 0; i < vertices.size(); i++) {
-		this->vertices[i] = s * this->vertices[i];
-	}
+	modelVertices.reserve(3 * faces.size());
+	for (int i = 0; i < faces.size(); i++)
+	{
+		Face currentFace = faces.at(i);
+		for (int j = 0; j < 3; j++)
+		{
+			int vertexIndex = currentFace.GetVertexIndex(j) - 1;
+			Vertex vertex;
+			vertex.position = vertices[vertexIndex];
 
+			if (normals.size() > 0) {
+				int normalIndex = currentFace.GetNormalIndex(j) - 1;
+				vertex.normal = normals[normalIndex];
+			}
+			else {
+				if(!computedNormal)
+					this->normals = CalculateNormals(vertices, faces);
+				computedNormal = true;
+				vertex.normal = this->normals[vertexIndex];
+			}
 
-	double maxX = 0, maxY = 0, minX = 0, minY = 0, maxZ = 0, minZ = 0, midX, midY, midZ;
-	for (int i = 0; i < this->vertices.size(); i++) {
-
-		/*std::cout << "v " << this->vertices[i].x <<
-			" " << this->vertices[i].y << " "
-			<< this->vertices[i].z << std::endl;*/
-
-		if (i == 0) {
-			minX = this->vertices[i].x;
-			minY = this->vertices[i].y;
-			maxX = this->vertices[i].x;
-			maxY = this->vertices[i].y;
-			minZ = this->vertices[i].z;
-			maxZ = this->vertices[i].z;
+			if (texture.size() > 0)
+			{
+				int textureCoordsIndex = currentFace.GetTextureIndex(j) - 1;
+				vertex.textureCoords = texture[textureCoordsIndex];
+			}
+			modelVertices.push_back(vertex);
 		}
-
-		if (this->vertices[i].x < minX)
-			minX = this->vertices[i].x;
-		if (minY > this->vertices[i].y)
-			minY = this->vertices[i].y;
-
-		if (this->vertices[i].x > maxX)
-			maxX = this->vertices[i].x;
-		if (maxY < this->vertices[i].y)
-			maxY = this->vertices[i].y;
-
-		if (this->vertices[i].z > maxZ)
-			maxZ = this->vertices[i].z;
-		if (this->vertices[i].z < minZ)
-			minZ = this->vertices[i].z;
 	}
 
-	midX = (maxX + minX) / 2;
-	midY = (maxY + minY) / 2;
-	midZ = (maxZ + minZ) / 2;
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
 
-	for (int i = 0; i < this->vertices.size(); i++) {
-		this->vertices[i].x -= midX;
-		this->vertices[i].y -= midY;
-		this->vertices[i].z -= midZ;
-	}
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, modelVertices.size() * sizeof(Vertex), &modelVertices[0], GL_STATIC_DRAW);
 
-	for (int i = 0; i < vertices.size(); i++) {
-		if (this->vertices[i].x > max_x || i == 0)
-			max_x = this->vertices[i].x;
-		if (this->vertices[i].y > max_y || i == 0)
-			max_y = this->vertices[i].y;
-		if (this->vertices[i].z > max_z || i == 0)
-			max_z = this->vertices[i].z;
+	// Vertex Positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
 
-		if (this->vertices[i].x < min_x || i == 0)
-			min_x = this->vertices[i].x;
-		if (this->vertices[i].y < min_y || i == 0)
-			min_y = this->vertices[i].y;
-		if (this->vertices[i].z < min_z || i == 0)
-			min_z = this->vertices[i].z;
-	}
-	mid_x = (max_x + min_x) / 2;
-	mid_y = (max_y + min_y) / 2;
-	mid_z = (max_z + min_z) / 2;
+	// Normals attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
-	/*for (int i = 0; i < faces.size(); i++) {
-		std::cout << "f " << faces[i].GetVertexIndex(0) << "/" << "/" << faces[i].GetNormalIndex(0) << " ";
-		std::cout << faces[i].GetVertexIndex(1) << "/" << "/" << faces[i].GetNormalIndex(1) << " ";
-		std::cout << faces[i].GetVertexIndex(2) << "/" << "/" << faces[i].GetNormalIndex(2) << std::endl;
-	}*/
+	// Vertex Texture Coords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+
+	// unbind to make sure other code does not change it somewhere else
+	glBindVertexArray(0);
 
 }
 
 MeshModel::~MeshModel()
 {
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo);
 }
 
 const Face& MeshModel::GetFace(int index) const
@@ -292,4 +274,48 @@ void MeshModel::updateZPoints(glm::fmat4 mat)
 		minZpoint = std::min(minZpoint, cords[1].z);
 		minZpoint = std::min(minZpoint, cords[2].z);
 	}
+}
+
+std::vector<glm::vec3> MeshModel::CalculateNormals(std::vector<glm::vec3> vertices, std::vector<Face> faces)
+{
+	std::vector<glm::vec3> normals(vertices.size());
+	std::vector<int> adjacent_faces_count(vertices.size());
+
+	for (int i = 0; i < adjacent_faces_count.size(); i++)
+	{
+		adjacent_faces_count[i] = 0;
+	}
+
+	for (int i = 0; i < faces.size(); i++)
+	{
+		Face currentFace = faces.at(i);
+
+		int index0 = currentFace.GetVertexIndex(0) - 1;
+		int index1 = currentFace.GetVertexIndex(1) - 1;
+		int index2 = currentFace.GetVertexIndex(2) - 1;
+
+		glm::vec3 v0 = vertices.at(index0);
+		glm::vec3 v1 = vertices.at(index1);
+		glm::vec3 v2 = vertices.at(index2);
+
+		glm::vec3 u = v0 - v1;
+		glm::vec3 v = v2 - v1;
+		glm::vec3 face_normal = glm::normalize(-glm::cross(u, v));
+
+		normals.at(index0) += face_normal;
+		normals.at(index1) += face_normal;
+		normals.at(index2) += face_normal;
+
+		adjacent_faces_count.at(index0) += 1;
+		adjacent_faces_count.at(index1) += 1;
+		adjacent_faces_count.at(index2) += 1;
+	}
+
+	for (int i = 0; i < normals.size(); i++)
+	{
+		normals[i] /= adjacent_faces_count[i];
+		normals[i] = glm::normalize(normals[i]);
+	}
+
+	return normals;
 }
