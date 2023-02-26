@@ -3,8 +3,6 @@
 
 Camera::Camera()
 {
-	adjustMat[3][0] = centerX;
-	adjustMat[3][1] = centerY;
 	this->updateOrth();
 	this->updatePers();
 	this->updateLocalTransformation();
@@ -19,8 +17,6 @@ Camera::Camera(std::vector<Face> faces, std::vector<glm::vec3> vertices, std::ve
 	texture(texture),
 	model_name(model_name)
 {
-	adjustMat[3][0] = centerX;
-	adjustMat[3][1] = centerY;
 	this->updateOrth();
 	this->updatePers();
 	this->updateLocalTransformation();
@@ -63,26 +59,15 @@ void Camera::DrawCameraHelp()
 	}
 }
 
-const glm::mat4x4& Camera::GetProjectionTransformation() const
+const glm::mat4x4 Camera::GetProjectionTransformation() const
 {
-	return projection_transformation;
+	return invMat * projection_transformation;
 }
 
 const glm::mat4x4& Camera::GetViewTransformation()
 {
-
-	glm::mat4x4 mat = glm::lookAt(eye, at, up);
-	glm::mat4x4 scaleDown = glm::mat4(1.0f);
-	scaleDown[0][0] = 0.2;
-	scaleDown[1][1] = 0.05;
-	scaleDown[2][2] = 0.001;
-	if (!isItPers) {
-		mat = adjustMat * ortho * mat * invMat;
-	}
-	else {
-		mat = glm::fmat4(adjustMat) * pers * mat * invMat * scaleDown;
-	}
-	return mat;
+	view_transformation = glm::lookAt(eye, at, up);
+	return view_transformation;
 }
 void Camera::updateLocalTransformation()
 {
@@ -146,20 +131,12 @@ void Camera::setWorldTrans(float x, float y, float z)
 
 void Camera::updateOrth()
 {
-	ortho = glm::ortho(left, right, bottom, top, nearr, farr);
+	projection_transformation = glm::ortho(left, right, bottom, top, nearr, farr);
 }
 
 void Camera::updatePers()
 {
-	/*pers = glm::mat4(1.0f);
-	pers[3][3] = 0;
-	pers[0][0] = 1 / (tan(fovy / 2) * aspect);
-	pers[1][1] = 1 / (tan(fovy / 2));
-	pers[2][2] = -1 * (perfar + pernear) / (pernear - perfar);
-	pers[3][2] = 1;
-	pers[2][3] = 2 * perfar * pernear / (pernear - perfar);*/
-
-	pers = glm::perspective(fovy, aspect, pernear, perfar);
+	projection_transformation = glm::perspective(fovy, aspect, pernear, perfar);
 }
 
 std::vector<glm::fvec3> Camera::getVertices() const
@@ -172,7 +149,7 @@ std::vector<Face> Camera::getFaces() const
 	return this->faces;
 }
 
-glm::mat4x4& Camera::GetWorldTransformations()
+const glm::mat4x4& Camera::GetWorldTransformations()
 {
 	return worldMatrixT * worldMatrixRX * worldMatrixRY * worldMatrixRZ *
 		localMatrixT * localMatrixRX * localMatrixRY * localMatrixRZ;

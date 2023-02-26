@@ -14,7 +14,7 @@ public:
 
 	void SetCameraLookAt();
 
-	const glm::mat4x4& GetProjectionTransformation() const;
+	const glm::mat4x4 GetProjectionTransformation() const;
 	const glm::mat4x4& GetViewTransformation();
 	void updateLocalTransformation();
 	void updateWorldTransformation();
@@ -24,7 +24,7 @@ public:
 	void DrawCameraHelp();
 	std::vector<glm::fvec3> getVertices() const;
 	std::vector<Face> getFaces() const;
-	glm::mat4x4& GetWorldTransformations();
+	const glm::mat4x4& GetWorldTransformations();
 	void updateDolly();
 
 	glm::vec3 localRotateVec = glm::fvec3(0, 0, 0);
@@ -43,7 +43,7 @@ public:
 	bool isItPers = false;
 	glm::vec3 up = glm::vec3(0, 1, 0);
 	glm::vec3 at = glm::vec3(0, 0, 0);
-	glm::vec3 eye = glm::vec3(0, 0, 1);
+	glm::vec3 eye = glm::vec3(0, 0, 10);
 private:
 
 	std::vector<Face> faces;
