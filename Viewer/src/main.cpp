@@ -1,23 +1,25 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <imgui/imgui.h>
-#include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
 #include <nfd.h>
-
+#include <stdio.h>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <string>
+#include <sstream>
+#include <stdlib.h>
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <glm/ext/matrix_transform.hpp>
-
 #include "Renderer.h"
 #include "Scene.h"
+#include "Camera.h"
 #include "Utils.h"
-#include <iostream>
 
-/**
- * Fields
- */
+bool plane = false, cylinder = false, sphere = false, toonMapping = false, normalMapping = false, environmentMapping = false,
+noneType = true, normalTexture = false, noneMapping = true;
 bool show_demo_window = false;
 bool show_another_window = false;
 bool useMouse = false;
@@ -33,61 +35,85 @@ static double mouseX = 640;
 static double mouseY = 360;
 static float fov = 45;
 glm::vec4 clear_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
-glm::vec4 model_color = glm::vec4(0.0f, 0.0f, 1.0f, 1.00f);
+glm::vec4 ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+glm::vec4 diffuse = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
+glm::vec4 specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.00f);
 static int num = 0, number = 0, number1 = 0;
+static int lightNum = 0, lightNumber = 0, lightNumber1 = 0;
+static bool lPos = false, lColor = false;
 static float dollyTrans = 0;
-/**
- * Function declarations
- */
-static void GlfwErrorCallback(int error, const char* description);
-GLFWwindow* SetupGlfwWindow(int w, int h, const char* window_name);
-ImGuiIO& SetupDearImgui(GLFWwindow* window);
-void StartFrame();
-void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& io);
-void Cleanup(GLFWwindow* window);
-void DrawImguiMenus(ImGuiIO& io, Scene& scene);
 
-/**
- * Function implementation
- */
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-	// TODO: Handle mouse scroll here
-}
+
+double zoomFactor = 1;
+int windowWidth = 1280;
+int windowHeight = 720;
+char* windowTitle = "OpenGL Demo";
+glm::vec4 clearColor = glm::vec4(0.8f, 0.8f, 0.8f, 1.00f);
+bool zoomChanged = false;
+std::shared_ptr<Scene> scene;
+
+ImGuiIO* imgui;
+GLFWwindow* window;
+
+GLFWwindow* SetupGlfwWindow(int w, int h, const char* window_name);
+ImGuiIO& SetupImgui(GLFWwindow* window);
+bool Setup(int windowWidth, int windowHeight, const char* windowName);
+void Cleanup();
+
+static void GlfwErrorCallback(int error, const char* description);
+void RenderFrame(GLFWwindow* window, std::shared_ptr<Scene> scene, Renderer& renderer, ImGuiIO& io);
+
+void glfw_OnMouseScroll(GLFWwindow* window, double xoffset, double yoffset);
+void glfw_OnFramebufferSize(GLFWwindow* window, int width, int height);
+
+float GetAspectRatio();
+void DrawImguiMenus();
+void HandleImguiInput();
 
 int main(int argc, char** argv)
 {
-	int windowWidth = 1280, windowHeight = 720;
-	GLFWwindow* window = SetupGlfwWindow(windowWidth, windowHeight, "Mesh Viewer");
-	if (!window)
-		return 1;
 
-	int frameBufferWidth, frameBufferHeight;
-	glfwMakeContextCurrent(window);
-	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
-
-	Renderer renderer = Renderer(frameBufferWidth, frameBufferHeight);
-	Scene scene = Scene();
-
-	//we need to add the first camera so we can see the world axies and the model in the 0, 0, 0 in the
-	//world axies
-	//without a camera we need to back the trick that we used in the second home work..
-	scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
-	scene.SetActiveCameraIndex(0);
-
-
-	ImGuiIO& io = SetupDearImgui(window);
-	glfwSetScrollCallback(window, ScrollCallback);
-	while (!glfwWindowShouldClose(window))
+	if (!Setup(windowWidth, windowHeight, windowTitle))
 	{
-		glfwPollEvents();
-		StartFrame();
-		DrawImguiMenus(io, scene);
-		RenderFrame(window, scene, renderer, io);
+		std::cerr << "Setup failed" << std::endl;
+		return -1;
 	}
 
-	Cleanup(window);
+	scene = std::make_shared<Scene>();
+	scene->AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
+	scene->SetActiveCameraIndex(0);
+
+	Renderer renderer;
+	renderer.LoadShaders();
+	renderer.LoadTextures();
+
+	while (!glfwWindowShouldClose(window))
+	{
+		// Poll and process events
+		glfwPollEvents();
+
+		// Imgui stuff
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		DrawImguiMenus();
+		ImGui::Render();
+		HandleImguiInput();
+
+		// Clear the screen and depth buffer
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Render scene
+		renderer.Render(scene);
+
+		// Imgui stuff
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		// Swap front and back buffers
+		glfwSwapBuffers(window);
+	}
+
+	glfwTerminate();
 	return 0;
 }
 
@@ -96,186 +122,205 @@ static void GlfwErrorCallback(int error, const char* description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-GLFWwindow* SetupGlfwWindow(int w, int h, const char* window_name)
+bool Setup(int windowWidth, int windowHeight, const char* windowName)
 {
-	glfwSetErrorCallback(GlfwErrorCallback);
+	GLFWwindow* window = SetupGlfwWindow(windowWidth, windowHeight, windowName);
+	if (!window)
+	{
+		std::cerr << "Window setup failed" << std::endl;
+		return false;
+	}
+
+	imgui = &SetupImgui(window);
+
+	glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+	glEnable(GL_DEPTH_TEST);
+
+	return true;
+}
+
+GLFWwindow* SetupGlfwWindow(int windowWidth, int windowHeight, const char* windowName)
+{
+	// Intialize GLFW
 	if (!glfwInit())
-		return NULL;
+	{
+		// An error occured
+		std::cerr << "GLFW initialization failed" << std::endl;
+		return false;
+	}
+
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#if __APPLE__
+	// forward compatible with newer versions of OpenGL as they become available but not backward compatible (it will not run on devices that do not support OpenGL 3.3
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
 
-	GLFWwindow* window = glfwCreateWindow(w, h, window_name, NULL, NULL);
+	// Create an OpenGL 3.3 core, forward compatible context window
+	window = glfwCreateWindow(windowWidth, windowHeight, windowName, NULL, NULL);
+	if (window == NULL)
+	{
+		std::cerr << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	// Make the window's context the current one
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1); // Enable vsync
-	// very importent!! initialization of glad
-	// https://stackoverflow.com/questions/48582444/imgui-with-the-glad-opengl-loader-throws-segmentation-fault-core-dumped
 
-	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+	// Setup window events callbacks
+	glfwSetFramebufferSizeCallback(window, glfw_OnFramebufferSize);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		// An error occured
+		std::cerr << "GLAD initialization failed" << std::endl;
+		return false;
+	}
+
 	return window;
 }
 
-ImGuiIO& SetupDearImgui(GLFWwindow* window)
+ImGuiIO& SetupImgui(GLFWwindow* window)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
+	(void)io;
+
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
+
+	// Setup style
 	ImGui::StyleColorsDark();
+
+	glfwSetScrollCallback(window, glfw_OnMouseScroll);
+
 	return io;
 }
 
-void StartFrame()
+void HandleImguiInput()
 {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-}
-
-void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& io)
-{
-	ImGui::Render();
-	int windowW, windowH;
-	int frameBufferWidth, frameBufferHeight;
-	glfwMakeContextCurrent(window);
-	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
-
-	if (frameBufferWidth != renderer.GetViewportWidth() || frameBufferHeight != renderer.GetViewportHeight())
+	if (!imgui->WantCaptureKeyboard)
 	{
-		Renderer renderer = Renderer(frameBufferWidth, frameBufferHeight);
-		if (renderer.GetViewportWidth() && renderer.GetViewportHeight())
-			glfwSetWindowAspectRatio(window, renderer.GetViewportWidth(), renderer.GetViewportHeight());
-		mouseX = frameBufferWidth / 2;
-		mouseY = frameBufferHeight / 2;
-
-	}
-
-	if (!io.WantCaptureKeyboard && useKeyboard)
-	{
-
 		// TODO: Handle keyboard events here
-		vector<int> indexes = scene.GetActiveModelsIndexes();
-		if (io.KeysDown['B'])
+		vector<int> indexes = scene->GetActiveModelsIndexes();
+		if (imgui->KeysDown['B'])
 		{
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localScaleVec;
-						scene.GetActiveModel(indexes[i]).localScaleVec = glm::fvec3(s[0] + 1.5, s[1] + 1.5, s[2] + 1.5);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localScaleVec;
+						scene->GetActiveModel(indexes[i]).localScaleVec = glm::fvec3(s[0] + 0.02, s[1] + 0.02, s[2] + 0.02);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldScaleVec;
-						scene.GetActiveModel(indexes[i]).worldScaleVec = glm::fvec3(s[0] + 1.2, s[1] + 1.2, s[2] + 1.2);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldScaleVec;
+						scene->GetActiveModel(indexes[i]).worldScaleVec = glm::fvec3(s[0] + 0.02, s[1] + 0.02, s[2] + 0.02);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
-		else if (io.KeysDown['M'])
+		else if (imgui->KeysDown['M'])
 		{
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localScaleVec;
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localScaleVec;
 						if (s[0] - 0.2 >= 0) {
-							scene.GetActiveModel(indexes[i]).localScaleVec = glm::fvec3(s[0] - 0.2, s[1] - 0.2, s[2] - 0.2);
-							scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+							scene->GetActiveModel(indexes[i]).localScaleVec = glm::fvec3(s[0] - 0.02, s[1] - 0.02, s[2] - 0.02);
+							scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 						}
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldScaleVec;
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldScaleVec;
 						if (s[0] - 0.2 >= 0) {
-							scene.GetActiveModel(indexes[i]).worldScaleVec = glm::fvec3(s[0] - 0.2, s[1] - 0.2, s[2] - 0.2);
-							scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+							scene->GetActiveModel(indexes[i]).worldScaleVec = glm::fvec3(s[0] - 0.02, s[1] - 0.02, s[2] - 0.02);
+							scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 						}
 					}
 				}
 			}
 		}
-		else if (io.KeysDown['W'])
+		else if (imgui->KeysDown['W'])
 		{
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0], s[1] + 10, s[2]);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0], s[1] + 0.1, s[2]);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldTransVec;
-						scene.GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0], s[1] + 10, s[2]);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldTransVec;
+						scene->GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0], s[1] + 0.1, s[2]);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
-		else if (io.KeysDown['D'])
+		else if (imgui->KeysDown['D'])
 		{
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0] + 10, s[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0] + 0.1, s[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldTransVec;
-						scene.GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0] + 10, s[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldTransVec;
+						scene->GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0] + 0.1, s[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
-		else if (io.KeysDown['A']) {
+		else if (imgui->KeysDown['A']) {
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0] - 10, s[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0] - 0.1, s[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldTransVec;
-						scene.GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0] - 10, s[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldTransVec;
+						scene->GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0] - 0.1, s[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
-		else if (io.KeysDown['S']) {
+		else if (imgui->KeysDown['S']) {
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0], s[1] - 10, s[2]);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(s[0], s[1] - 0.1, s[2]);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldTransVec;
-						scene.GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0], s[1] - 10, s[2]);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldTransVec;
+						scene->GetActiveModel(indexes[i]).worldTransVec = glm::fvec3(s[0], s[1] - 0.1, s[2]);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
 	}
 	//we need to get the active cameras
-	if (!io.WantCaptureKeyboard && cameraWorldTrans) {
-		if (io.KeysDown['L']) {
-			scene.GetCamera(0).worldTransVec[0] -= 10;
+	if (!imgui->WantCaptureKeyboard && cameraWorldTrans) {
+		if (imgui->KeysDown['L']) {
+			scene->GetCamera(0).worldTransVec[0] -= 10;
 		}
-		else if (io.KeysDown['R']) {
-			scene.GetCamera(0).worldTransVec[0] += 10;
+		else if (imgui->KeysDown['R']) {
+			scene->GetCamera(0).worldTransVec[0] += 10;
 		}
-		scene.GetCamera(0).updateWorldTransformation();
+		scene->GetCamera(0).updateWorldTransformation();
 	}
-	if (!io.WantCaptureMouse && useMouse)
+	if (!imgui->WantCaptureMouse && useMouse)
 	{
 		// TODO: Handle mouse events here
 		// there is a bug sometimes it moves the inappropriate object
@@ -289,37 +334,29 @@ void RenderFrame(GLFWwindow* window, Scene& scene, Renderer& renderer, ImGuiIO& 
 		// change the silders it's used to matrices and it makes problem
 		// what an idiot problem that took so much time, solved.
 
-		if (io.MouseDown[0])
+		if (imgui->MouseDown[0])
 		{
-			vector<int> indexes = scene.GetActiveModelsIndexes();
+			vector<int> indexes = scene->GetActiveModelsIndexes();
 			for (int i = 0; i < indexes.size(); i++) {
-				if (scene.GetActiveModel(indexes[i]).GetModelName() == modelName) {
+				if (scene->GetActiveModel(indexes[i]).GetModelName() == modelName) {
 					if (localTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).localTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(io.MousePos[0] - mouseX, mouseY - io.MousePos[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateLocalMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).localTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(imgui->MousePos[0] - mouseX, mouseY - imgui->MousePos[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateLocalMatrix();
 					}
 					else if (worldTrans) {
-						glm::fvec3 s = scene.GetActiveModel(indexes[i]).worldTransVec;
-						scene.GetActiveModel(indexes[i]).localTransVec = glm::fvec3(io.MousePos[0] - mouseX, mouseY - io.MousePos[1], s[2]);
-						scene.GetActiveModel(indexes[i]).updateWorldMatrix();
+						glm::fvec3 s = scene->GetActiveModel(indexes[i]).worldTransVec;
+						scene->GetActiveModel(indexes[i]).localTransVec = glm::fvec3(imgui->MousePos[0] - mouseX, mouseY - imgui->MousePos[1], s[2]);
+						scene->GetActiveModel(indexes[i]).updateWorldMatrix();
 					}
 				}
 			}
 		}
 
 	}
-
-	renderer.ClearColorBuffer(clear_color);
-	renderer.Render(scene);
-	renderer.SwapBuffers();
-
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	glfwMakeContextCurrent(window);
-	glfwSwapBuffers(window);
 }
 
-void Cleanup(GLFWwindow* window)
+void Cleanup()
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -329,11 +366,31 @@ void Cleanup(GLFWwindow* window)
 	glfwTerminate();
 }
 
-void DrawImguiMenus(ImGuiIO& io, Scene& scene)
+//-----------------------------------------------------------------------------
+// Is called when the window is resized
+//-----------------------------------------------------------------------------
+void glfw_OnFramebufferSize(GLFWwindow* window, int width, int height)
 {
-	/**
-	 * MeshViewer menu
-	 */
+	windowWidth = width;
+	windowHeight = height;
+	glViewport(0, 0, windowWidth, windowHeight);
+	scene->GetActiveCamera().aspect = GetAspectRatio();
+}
+
+void glfw_OnMouseScroll(GLFWwindow* window, double xoffset, double yoffset)
+{
+	ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+	zoomFactor = glm::pow(1.1, -yoffset);
+	zoomChanged = true;
+}
+
+float GetAspectRatio()
+{
+	return static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+}
+
+void DrawImguiMenus()
+{
 	ImGui::Begin("MeshViewer Menu");
 
 	// Menu Bar
@@ -347,7 +404,7 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				nfdresult_t result = NFD_OpenDialog("obj;", NULL, &outPath);
 				if (result == NFD_OKAY)
 				{
-					scene.AddModel(Utils::LoadMeshModel(outPath));
+					scene->AddModel(Utils::LoadMeshModel(outPath));
 					free(outPath);
 
 				}
@@ -366,20 +423,8 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		ImGui::EndMainMenuBar();
 	}
 
-	// Controls
-	ImGui::ColorEdit3("Clear Color", (float*)&clear_color);
-	ImGui::ColorEdit3("model Color", (float*)&model_color);
-	// TODO: Add more controls as needed
-
 	ImGui::End();
 
-	/**
-	 * Imgui demo - you can remove it once you are familiar with imgui
-	 */
-
-	 // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
 
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 	{
@@ -399,22 +444,46 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 		static bool moreFeatures = false;
 
 
-		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &show_another_window);
+		ImGui::Begin("A Lot Of Things");
 		ImGui::Checkbox("Object Control Window", &transWindow);
 		ImGui::Checkbox("Camera Control Window", &cameraWindow);
-		ImGui::Checkbox("Draw World Axis", &scene.GetActiveCamera().drawWorldAxisFlag);
+		ImGui::Checkbox("Light Control Window", &scene->lightOn);
+		ImGui::ColorEdit3("Clear Color", (float*)&clear_color);
 
-		//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-		//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-		//	counter++;
-		//ImGui::SameLine();
-		//ImGui::Text("counter = %d", counter);
+		if (scene->lightOn) {
+			ImGui::Begin("Light Control Window");
+			if (ImGui::Button("Add Light")) {
+				Light l = Light();
+				scene->addLight(make_shared<Light>(l));
+			}
+			ImGui::InputInt("Light Index", &lightNum, lightNumber, lightNumber1, false);
+			if (lightNum >= 0 && lightNum < scene->getLengthLights())
+				scene->SetActiveLightIndex(lightNum);
+			else {
+				ImGui::Begin("Error Light Index");
+				ImGui::Text("Please enter a valid light Index from 0 to %d", scene->getLengthLights() - 1);
+				ImGui::End();
+			}
+			ImGui::Checkbox("Light position", &lPos);
+			ImGui::Checkbox("Color position", &lColor);
+			if (lColor && scene->getLengthLights() >= 1) {
+				ImGui::ColorEdit3("ambient", (float*)&scene->getActiveLight().ambient);
+				ImGui::ColorEdit3("diffuse", (float*)&scene->getActiveLight().diffuse);
+				ImGui::ColorEdit3("specular", (float*)&scene->getActiveLight().specular);
+			}
+			if (lPos && scene->getLengthLights() >= 1) {
+				ImGui::SliderFloat("position x", &scene->getActiveLight().pos[0], 0, 1280);
+				ImGui::SliderFloat("position y", &scene->getActiveLight().pos[1], 0, 720);
+				ImGui::SliderFloat("position z", &scene->getActiveLight().pos[2], 0, 2000);
+			}
+			else if (lPos && scene->getLengthLights() < 1) {
+				ImGui::Begin("Error Light Index");
+				ImGui::Text("Please enter a valid light Index from 0 to %d", scene->getLengthLights() - 1);
+				ImGui::End();
+			}
+			ImGui::End();
+		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
@@ -423,13 +492,97 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			ImGui::Begin("Object Control");
 			ImGui::InputText("Which model? ", modelName, 100);
 			ImGui::Checkbox("Turn on/off the model", &activeModel);
-			ImGui::Checkbox("Move Obj by Mouse", &useMouse);
-			ImGui::Checkbox("Move Obj by keyBoard", &useKeyboard);
-			ImGui::ColorEdit3("model color", (float*)&model_color); // Edit 3 floats representing a color
+			ImGui::ColorEdit3("ambient", (float*)&ambient);
+			ImGui::ColorEdit3("diffuse", (float*)&diffuse);
+			ImGui::ColorEdit3("specular", (float*)&specular);
 			ImGui::Checkbox("Local Transformations", &localTrans);
 			ImGui::SameLine();
 			ImGui::Checkbox("World Transformations", &worldTrans);
-			ImGui::Checkbox("Advanced features", &moreFeatures);
+
+			ImGui::NewLine();
+
+
+
+			if (ImGui::Checkbox("No Type   ", &noneType) && noneType) {
+				scene->type = 0;
+				plane = false;
+				cylinder = false;
+				sphere = false;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Checkbox("No Mapping", &noneMapping) && noneMapping) {
+				scene->mapping = 0;
+				toonMapping = false;
+				normalMapping = false;
+				environmentMapping = false;
+				normalTexture = false;
+			}
+
+			if (ImGui::Checkbox("Plane     ", &plane) && plane) {
+				scene->type = 1;
+				noneType = false;
+				cylinder = false;
+				sphere = false;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Checkbox("Normal Mapping", &normalMapping) && normalMapping) {
+				scene->mapping = 1;
+				noneMapping = false;
+				toonMapping = false;
+				environmentMapping = false;
+				normalTexture = false;
+			}
+
+			if (ImGui::Checkbox("Cylinder  ", &cylinder) && cylinder) {
+				scene->type = 2;
+				noneType = false;
+				plane = false;
+				sphere = false;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Checkbox("Environment Mapping", &environmentMapping) && environmentMapping) {
+				scene->mapping = 2;
+				noneMapping = false;
+				normalMapping = false;
+				toonMapping = false;
+				normalTexture = false;
+			}
+
+			if (ImGui::Checkbox("Sphere    ", &sphere) && sphere) {
+				scene->type = 3;
+				noneType = false;
+				cylinder = false;
+				plane = false;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Checkbox("Toon Mapping", &toonMapping) && toonMapping) {
+				scene->mapping = 3;
+				noneMapping = false;
+				normalMapping = false;
+				environmentMapping = false;
+				normalTexture = false;
+			}
+
+			if (ImGui::Checkbox("Normal Texture", &normalTexture) && normalTexture) {
+				scene->mapping = 4;
+				noneMapping = false;
+				normalMapping = false;
+				environmentMapping = false;
+				toonMapping = false;
+			}
+
+			if (toonMapping) {
+				ImGui::SliderInt("Number Of Transitions", &scene->transitionsNum, 2, 16);
+			}
+
 			ImGui::End();
 
 			if (useKeyboard) {
@@ -440,33 +593,17 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 				ImGui::End();
 			}
 
-			for (int i = 0; i < scene.GetModelCount(); i++) {
-				if (scene.GetModel(i).GetModelName() == modelName && activeModel) {
-					scene.GetModel(i).setColor(glm::vec3(model_color[0], model_color[1], model_color[2]));
-					scene.SetActiveModelIndex(i);
+			for (int i = 0; i < scene->GetModelCount(); i++) {
+				if (scene->GetModel(i).GetModelName() == modelName && activeModel) {
+					scene->GetModel(i).setColor(ambient,
+						diffuse,
+						specular);
+					scene->SetActiveModelIndex(i);
 					modelIndex = i;
 				}
-				else if (scene.GetModel(i).GetModelName() == modelName && !activeModel) {
-					scene.TurnOffActiveModel(i);
+				else if (scene->GetModel(i).GetModelName() == modelName && !activeModel) {
+					scene->TurnOffActiveModel(i);
 				}
-			}
-
-			if (moreFeatures && modelIndex != -1) {
-				MeshModel& model = scene.GetActiveModel(modelIndex);
-				ImGui::Begin("Advanced features");
-				ImGui::Checkbox("Local Bound Box", &model.boundBox);
-				ImGui::Checkbox("World Bound Box", &model.boundBoxWorld);
-				ImGui::Checkbox("Face Normals", &model.faceNormals);
-				ImGui::Checkbox("Vertices Normals", &model.vertexNormals);
-				ImGui::Checkbox("Model Axis", &model.modelAxis);
-				ImGui::Checkbox("Triangles Bounding Rectangles", &model.boundingRectangle);
-				ImGui::Checkbox("Raterize Triangle", &model.showRaterized);
-				ImGui::Checkbox("Randomly Coloring", &model.showRandom);
-				ImGui::SameLine();
-				ImGui::Checkbox("Z Buffer", &model.showZbuff);
-				ImGui::SameLine();
-				ImGui::Checkbox("Color Buffer", &model.showColorbuff);
-				ImGui::End();
 			}
 			//if we update the object by local or world transformations I did not save the 
 			//transformation vectors, if we change the selected object the other object will have the same
@@ -475,71 +612,74 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			//solved
 
 			if (localTrans && modelIndex != -1) {
-				MeshModel& model = scene.GetActiveModel(modelIndex);
+				MeshModel& model = scene->GetActiveModel(modelIndex);
 				model.localTrans = true;
 
 				ImGui::Begin("Local Transformations", &localTrans);
 
-				ImGui::SliderFloat("Scale x", &model.localScaleVec[0], 0.01, 10);
-				ImGui::SliderFloat("Scale y", &model.localScaleVec[1], 0.01, 10);
-				ImGui::SliderFloat("Scale z", &model.localScaleVec[2], 0.01, 10);
+				ImGui::SliderFloat("Scale x", &model.localScaleVec[0], -1, 10);
+				ImGui::SliderFloat("Scale y", &model.localScaleVec[1], -1, 10);
+				ImGui::SliderFloat("Scale z", &model.localScaleVec[2], -1, 10);
 				ImGui::SliderFloat("Rotate x", &model.localRotateVec[0], -360, 360);
 				ImGui::SliderFloat("Rotate y", &model.localRotateVec[1], -360, 360);
 				ImGui::SliderFloat("Rotate z", &model.localRotateVec[2], -360, 360);
-				ImGui::SliderFloat("Translate x", &model.localTransVec[0], -720, 720);
-				ImGui::SliderFloat("Translate y", &model.localTransVec[1], -1280, 1280);
-				ImGui::SliderFloat("Translate z", &model.localTransVec[2], -720, 720);
+				ImGui::SliderFloat("Translate x", &model.localTransVec[0], -1, 1);
+				ImGui::SliderFloat("Translate y", &model.localTransVec[1], -1, 1);
+				ImGui::SliderFloat("Translate z", &model.localTransVec[2], -1, 1);
 
 				model.updateLocalMatrix();
 				ImGui::End();
 
 			}
 			else if (worldTrans && modelIndex != -1) {
-				MeshModel& model = scene.GetActiveModel(modelIndex);
+				MeshModel& model = scene->GetActiveModel(modelIndex);
 				model.localTrans = false;
 
 				ImGui::Begin("World Transformations", &worldTrans);
-				ImGui::SliderFloat("Scale x", &model.worldScaleVec[0], 0.01, 10);
-				ImGui::SliderFloat("Scale y", &model.worldScaleVec[1], 0.01, 10);
-				ImGui::SliderFloat("Scale z", &model.worldScaleVec[2], 0.01, 10);
+				ImGui::SliderFloat("Scale x", &model.worldScaleVec[0], -1, 10);
+				ImGui::SliderFloat("Scale y", &model.worldScaleVec[1], -1, 10);
+				ImGui::SliderFloat("Scale z", &model.worldScaleVec[2], -1, 10);
 				ImGui::SliderFloat("Rotate x", &model.worldRotateVec[0], -360, 360);
 				ImGui::SliderFloat("Rotate y", &model.worldRotateVec[1], -360, 360);
 				ImGui::SliderFloat("Rotate z", &model.worldRotateVec[2], -360, 360);
-				ImGui::SliderFloat("Translate x", &model.worldTransVec[0], -720, 720);
-				ImGui::SliderFloat("Translate y", &model.worldTransVec[1], -1280, 1280);
-				ImGui::SliderFloat("Translate z", &model.worldTransVec[2], -720, 720);
+				ImGui::SliderFloat("Translate x", &model.worldTransVec[0], -1, 1);
+				ImGui::SliderFloat("Translate y", &model.worldTransVec[1], -1, 1);
+				ImGui::SliderFloat("Translate z", &model.worldTransVec[2], -1, 1);
 
 				model.updateWorldMatrix();
 				ImGui::End();
 			}
 			else {
-				for (int i = 0; i < scene.GetModelCount(); i++) {
-					scene.GetModel(i).localTrans = false;
+				for (int i = 0; i < scene->GetModelCount(); i++) {
+					scene->GetModel(i).localTrans = false;
 				}
 			}
 		}
 		else {
 			for (int i = 0; i < 100; i++) {
 				modelName[i] = '\0';
-				if (i < 3)
-					model_color[i] = 0;
+				if (i < 3) {
+					ambient[i] = 0;
+					diffuse[i] = 0;
+					specular[i] = 0;
+				}
 			}
-			model_color[2] = 1.0f;
+			ambient[2] = 1.0f;
 			useMouse = false;
 			useKeyboard = false;
 			activeModel = false;
 			localTrans = false;
 			worldTrans = false;
 
-			for (int i = 0; i < scene.GetModelCount(); i++) {
-				scene.GetModel(i).localTrans = false;
+			for (int i = 0; i < scene->GetModelCount(); i++) {
+				scene->GetModel(i).localTrans = false;
 			}
 		}
 		//we need to get for all the active cameras
 		if (cameraWindow) {
 
 			ImGui::Begin("Camera Control");
-			ImGui::Checkbox("Draw Cameras", &scene.drawCameras);
+			ImGui::Checkbox("Draw Cameras", &scene->drawCameras);
 			ImGui::InputInt("Camera Index", &num, number, number1, false);
 			ImGui::Checkbox("Orthographic", &ortho);
 			ImGui::Checkbox("Perspective", &persp);
@@ -551,82 +691,82 @@ void DrawImguiMenus(ImGuiIO& io, Scene& scene)
 			}
 
 			if (ImGui::Button("Add Camera")) {
-				scene.AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
+				scene->AddCamera(Utils::LoadCamera("..\\Data\\camera.obj"));
 			}
-			if (num >= 0 && num < scene.GetCameraCount())
-				scene.SetActiveCameraIndex(num);
+			if (num >= 0 && num < scene->GetCameraCount())
+				scene->SetActiveCameraIndex(num);
 			else {
 				ImGui::Begin("Error Camera Index");
-				ImGui::Text("Please enter a valid camera Index from 0 to %d", scene.GetCameraCount() - 1);
+				ImGui::Text("Please enter a valid camera Index from 0 to %d", scene->GetCameraCount() - 1);
 				ImGui::End();
 			}
 			ImGui::End();
-			if (ortho && scene.GetActiveCameraIndex() != -1) {
+			if (ortho && scene->GetActiveCameraIndex() != -1) {
 				ImGui::Begin("Orthographic buttons");
-				ImGui::SliderFloat("bottom", &scene.GetActiveCamera().bottom, -10, 10);
-				ImGui::SliderFloat("top", &scene.GetActiveCamera().top, -10, 10);
-				ImGui::SliderFloat("left", &scene.GetActiveCamera().left, -10, 10);
-				ImGui::SliderFloat("right", &scene.GetActiveCamera().right, -10, 10);
-				ImGui::SliderFloat("near", &scene.GetActiveCamera().nearr, -100, 100);
-				ImGui::SliderFloat("far", &scene.GetActiveCamera().farr, -100, 100);
-				//ImGui::SliderFloat("far", &scene.GetActiveCamera()., -100, 100);
-				scene.GetActiveCamera().updateOrth();
+				ImGui::SliderFloat("bottom", &scene->GetActiveCamera().bottom, -10, 10);
+				ImGui::SliderFloat("top", &scene->GetActiveCamera().top, -10, 10);
+				ImGui::SliderFloat("left", &scene->GetActiveCamera().left, -10, 10);
+				ImGui::SliderFloat("right", &scene->GetActiveCamera().right, -10, 10);
+				ImGui::SliderFloat("near", &scene->GetActiveCamera().nearr, -100, 100);
+				ImGui::SliderFloat("far", &scene->GetActiveCamera().farr, -100, 100);
+				//ImGui::SliderFloat("far", &scene->GetActiveCamera()., -100, 100);
+				scene->GetActiveCamera().updateOrth();
 				ImGui::End();
 			}
-			else if (persp && scene.GetActiveCameraIndex() != -1) {
-				fov = glm::degrees(scene.GetActiveCamera().fovy);
-				dollyTrans = scene.GetActiveCamera().worldTransVec[2];
-				scene.GetActiveCamera().isItPers = true;
+			else if (persp && scene->GetActiveCameraIndex() != -1) {
+				fov = glm::degrees(scene->GetActiveCamera().fovy);
+				dollyTrans = scene->GetActiveCamera().worldTransVec[2];
+				scene->GetActiveCamera().isItPers = true;
 				ImGui::Begin("Perspective buttons");
 				ImGui::SliderFloat("Fovy", &fov, -180, 180);
-				ImGui::SliderFloat("aspect", &scene.GetActiveCamera().aspect, 0, 10);
-				ImGui::SliderFloat("near", &scene.GetActiveCamera().pernear, -10, 10);
-				ImGui::SliderFloat("far", &scene.GetActiveCamera().perfar, -10, 10);
-				scene.GetActiveCamera().fovy = glm::radians(fov);
-				scene.GetActiveCamera().updatePers();
+				ImGui::SliderFloat("aspect", &scene->GetActiveCamera().aspect, 0, 10);
+				ImGui::SliderFloat("near", &scene->GetActiveCamera().pernear, -10, 10);
+				ImGui::SliderFloat("far", &scene->GetActiveCamera().perfar, -10, 10);
+				scene->GetActiveCamera().fovy = glm::radians(fov);
+				scene->GetActiveCamera().updatePers();
 				if (ImGui::SliderFloat("Dolly Zoom", &dollyTrans, 0, 20)) {
-					scene.GetActiveCamera().worldTransVec[2] = dollyTrans;
-					scene.GetActiveCamera().updateDolly();
-					scene.GetActiveCamera().updateWorldTransformation();
+					scene->GetActiveCamera().worldTransVec[2] = dollyTrans;
+					scene->GetActiveCamera().updateDolly();
+					scene->GetActiveCamera().updateWorldTransformation();
 				}
 
 				ImGui::End();
 			}
-			if (!persp && scene.GetActiveCameraIndex() != -1)
-				scene.GetActiveCamera().isItPers = false;
+			if (!persp && scene->GetActiveCameraIndex() != -1)
+				scene->GetActiveCamera().isItPers = false;
 			if (incChanges) {
-				if (cameraWorldTrans && scene.GetActiveCameraIndex() != -1) {
+				if (cameraWorldTrans && scene->GetActiveCameraIndex() != -1) {
 					ImGui::Begin("Camera Translate");
-					ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().worldTransVec[0], -720, 720);
-					ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().worldTransVec[1], -1280, 1280);
-					ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().worldTransVec[2], -15, 15);
+					ImGui::SliderFloat("Translate x", &scene->GetActiveCamera().worldTransVec[0], -1, 1);
+					ImGui::SliderFloat("Translate y", &scene->GetActiveCamera().worldTransVec[1], -1, 1);
+					ImGui::SliderFloat("Translate z", &scene->GetActiveCamera().worldTransVec[2], -1, 1);
 
-					ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().worldRotateVec[0], -360, 360);
-					ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().worldRotateVec[1], -360, 360);
-					ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().worldRotateVec[2], -360, 360);
+					ImGui::SliderFloat("Rotate x", &scene->GetActiveCamera().worldRotateVec[0], -360, 360);
+					ImGui::SliderFloat("Rotate y", &scene->GetActiveCamera().worldRotateVec[1], -360, 360);
+					ImGui::SliderFloat("Rotate z", &scene->GetActiveCamera().worldRotateVec[2], -360, 360);
 					ImGui::End();
 
-					scene.GetActiveCamera().updateWorldTransformation();
+					scene->GetActiveCamera().updateWorldTransformation();
 				}
-				if (cameraLocalTrans && scene.GetActiveCameraIndex() != -1) {
+				if (cameraLocalTrans && scene->GetActiveCameraIndex() != -1) {
 					ImGui::Begin("Camera Translate");
-					ImGui::SliderFloat("Translate x", &scene.GetActiveCamera().localTransVec[0], -720, 720);
-					ImGui::SliderFloat("Translate y", &scene.GetActiveCamera().localTransVec[1], -1280, 1280);
-					ImGui::SliderFloat("Translate z", &scene.GetActiveCamera().localTransVec[2], -15, 15);
+					ImGui::SliderFloat("Translate x", &scene->GetActiveCamera().localTransVec[0], -1, 1);
+					ImGui::SliderFloat("Translate y", &scene->GetActiveCamera().localTransVec[1], -1, 1);
+					ImGui::SliderFloat("Translate z", &scene->GetActiveCamera().localTransVec[2], -1, 1);
 
-					ImGui::SliderFloat("Rotate x", &scene.GetActiveCamera().localRotateVec[0], -360, 360);
-					ImGui::SliderFloat("Rotate y", &scene.GetActiveCamera().localRotateVec[1], -360, 360);
-					ImGui::SliderFloat("Rotate z", &scene.GetActiveCamera().localRotateVec[2], -360, 360);
+					ImGui::SliderFloat("Rotate x", &scene->GetActiveCamera().localRotateVec[0], -360, 360);
+					ImGui::SliderFloat("Rotate y", &scene->GetActiveCamera().localRotateVec[1], -360, 360);
+					ImGui::SliderFloat("Rotate z", &scene->GetActiveCamera().localRotateVec[2], -360, 360);
 					ImGui::End();
 
-					scene.GetActiveCamera().updateLocalTransformation();
+					scene->GetActiveCamera().updateLocalTransformation();
 				}
 			}
 
 			if (lookatCB) {
-				ImGui::SliderFloat("Eye X Value", &scene.GetActiveCamera().eye.x, -30, 30);
-				ImGui::SliderFloat("Eye Y Value", &scene.GetActiveCamera().eye.y, -30, 30);
-				ImGui::SliderFloat("Eye Z Value", &scene.GetActiveCamera().eye.z, -30, 30);
+				ImGui::SliderFloat("Eye X Value", &scene->GetActiveCamera().eye.x, -30, 30);
+				ImGui::SliderFloat("Eye Y Value", &scene->GetActiveCamera().eye.y, -30, 30);
+				ImGui::SliderFloat("Eye Z Value", &scene->GetActiveCamera().eye.z, -30, 30);
 			}
 		}
 
